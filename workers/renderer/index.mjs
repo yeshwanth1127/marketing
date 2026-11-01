@@ -22,8 +22,14 @@ if(asset.data.type==='video'&&payload.video_dir){
  await exec(process.execPath,[hf,'render',project,'--quality','looks','--workers','1','-o',output],{env,timeout:900000,maxBuffer:5000000});
  const metadata=JSON.parse((await exec(probe,['-v','quiet','-print_format','json','-show_format','-show_streams',output],{timeout:10000})).stdout);
  if(want&&Math.abs(Number(metadata.format.duration)-want)>.25)throw new Error(`Video duration ${metadata.format.duration}s does not match the composition's ${want}s`);
+ // Licensed soundtrack built by Claude with real-sound: mux it (picture stream-copied, audio cut to the picture).
+ let sound=null;const st=path.join(project,'soundtrack.wav');
+ if(fs.existsSync(st)){const withSound=path.join(dir,'reel-sound.mp4');await exec(process.env.FFMPEG_BIN||'ffmpeg',['-y','-v','error','-i',output,'-i',st,'-map','0:v:0','-map','1:a:0','-c:v','copy','-c:a','aac','-b:a','320k','-ar','48000','-shortest',withSound],{env,timeout:300000});
+  const lu=await exec(process.env.FFMPEG_BIN||'ffmpeg',['-hide_banner','-nostats','-i',withSound,'-af','ebur128=peak=true','-f','null','-'],{env,timeout:120000}).then(r=>r.stderr).catch(e=>String(e.stderr||''));
+  const I=Number((lu.match(/I:\s+(-?[\d.]+) LUFS/g)||[]).pop()?.match(/-?[\d.]+/)?.[0]),TP=Number((lu.match(/Peak:\s+(-?[\d.]+) dBFS/g)||[]).pop()?.match(/-?[\d.]+/)?.[0]);
+  sound={integrated_lufs:Number.isFinite(I)?I:null,true_peak_dbtp:Number.isFinite(TP)?TP:null};files.push({id:id(),path:withSound,name:'reel-with-sound.mp4',mime:'video/mp4'});}
  files.push({id:id(),path:output,name:'reel.mp4',mime:'video/mp4'});
- return {files,engine:'Claude-composed HyperFrames + Chromium + FFmpeg',width,height,design_checks,video_checks,seconds:Number(metadata.format.duration)};
+ return {files,sound,engine:'Claude-composed HyperFrames + Chromium + FFmpeg'+(sound?' + real-sound':''),width,height,design_checks,video_checks,seconds:Number(metadata.format.duration)};
 }
 if(asset.data.type==='video'){
  const output=path.join(dir,'reel.mp4');

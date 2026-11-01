@@ -1,3 +1,59 @@
 tools: []
 # External connectors are deferred. No network, shell or SQL tool is exposed to the model.
 services: [renderer]
+scripts:
+  - id: talking-head-effect
+    skill: effects
+    file: scripts/fx.py
+    mode: direct
+    background: true
+    timeout_ms: 1800000
+    outputs: [{path: out/effect.mp4, mime: video/mp4, name: talking-head-effect.mp4}]
+    output: text
+    label: Talking-head effect on a video (effects fx.py, 45 effects)
+    help: Upload a talking-head clip first (Onboard → Brand documents or Library). Runs in the background; the result appears in Library.
+    params:
+      - {name: effect, type: choice, positional: true, required: true, choices: [noise, lineup, locked-on, orbit, lean-in, backdrop-word, spotlight, the-bill, moody, swipe, todo, tap, pause-point, uninstall, reel-frame, shortcut-rain, reject-stamp, countdown-flip, rabbit-hole, cover-star, scribble, red-collage, split-headline, pastel-word, check-pills, headline-box, profile-wall, tier-list, broll-split, phone-fan, dot-reveal, headline-wall, checklist, glass-widgets, timeline, comment-box, liquid-glass-graph, carousel-spin, match-cut, apple-toggles, led-sign, slow-push, over-the-shoulder-zoom, messages, place-in-grid], label: Effect}
+      - {name: video, type: file, accept: "video/", positional: true, required: true, label: Talking-head video}
+      - {name: out, type: output, path: out/effect.mp4, positional: true}
+      - {name: start, flag: --start, type: number, min: 0, label: Start (seconds)}
+      - {name: end, flag: --end, type: number, min: 0, label: End (seconds)}
+      - {name: text, flag: --text, type: string, max_length: 120, label: Text / word for the effect}
+      - {name: width, flag: --width, type: choice, choices: ["720", "1080", "2160"], label: Output short side}
+  - id: audio-measure
+    skill: real-sound
+    file: scripts/analyze.py
+    mode: direct
+    output: json
+    label: Measure an audio file (real-sound analyze.py)
+    help: Format, noise floor, bandwidth, onsets and spikes; with music analysis, tempo, beats and key.
+    params:
+      - {name: audio, type: file, accept: "audio/,video/", convert: wav, positional: true, required: true, label: Audio or video file}
+      - {name: music, flag: --music, type: flag, label: Music analysis (tempo, beats, key)}
+    args: ["--json"]
+  - id: loudness
+    skill: real-sound
+    file: scripts/master.py
+    mode: direct
+    output: json
+    output_file: loudness.json
+    args: ["--measure", "--json", "{box}/loudness.json"]
+    label: Loudness and true peak (real-sound master.py --measure)
+    help: Instagram and YouTube play back near -14 LUFS; true peak should stay at or under -1 dBTP.
+    params:
+      - {name: audio, type: file, accept: "audio/,video/", convert: wav, positional: true, required: true, label: Audio or video file}
+  - id: add-soundtrack
+    skill: real-sound
+    file: scripts/mux.mjs
+    mode: direct
+    background: true
+    timeout_ms: 600000
+    tail_args: ["--out", "{box}/out/with-sound.mp4"]
+    outputs: [{path: out/with-sound.mp4, mime: video/mp4, name: video-with-sound.mp4}]
+    output: text
+    label: Put a licensed soundtrack on a video (real-sound mux.mjs)
+    help: The picture is stream-copied and the audio is cut to the video's length. Use only audio whose licence you hold.
+    params:
+      - {name: video, flag: --video, type: file, accept: "video/", required: true, label: Video}
+      - {name: audio, flag: --audio, type: file, accept: "audio/", required: true, label: Licensed soundtrack}
+

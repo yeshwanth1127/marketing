@@ -186,7 +186,7 @@ quality history and reports persist between runs.
 |---|---|---|
 | 0 · Core loop | hookscore, beats, caption, detect, eval-runner, claim-verifier, budget-optimizer, creative-fatigue-predictor, sample-size-calculator, significance-tester (11) | **Live** |
 | 1 · Offline, high value | language-router (detect, supported, score, route), guidelines-manager, dm-status, mine_hooks, swipe, keyword_cluster (Hooks + SEO), brand-voice-scorer, content-scorer, ai-tell-scan, humanize, quality-tracker (log + history), report-generator, ad-budget-pacer, clv-calculator, revenue-forecaster, team-manager | **Live** (21 tools; brand voice, content score, AI-tell scan and quality history run automatically on every copy draft) |
-| 2 · Video and sound | motion-doctrine seam-gate/seam-stamp; real-sound analyze/arrange/audit/licences/mux; media-use audio; effects fx.py; watch-video watch.py (needs internet) | Next |
+| 2 · Video and sound | effects fx.py (45 talking-head effects, background job → Library), real-sound mux.mjs (add a licensed soundtrack), analyze.py (audio measurement), master.py --measure (loudness / true peak); reels can take licensed audio: Claude builds the soundtrack with real-sound + earshot (analyze, arrange, mix, master, qa) and the worker muxes it and measures loudness; motion-doctrine seam-gate/seam-stamp available to Claude in reels; `python3 -I` skill calls and `python3 -m earshot` allowed and receipted | **Live** (effects and mux tested end to end; analyze/master/earshot need `setup-mac.command`); media-use audio (HeyGen/Gemini/Lyria keys) and watch-video (internet) move to batch 4 |
 | 3 · Remaining offline DMP | setup (brand check/summary), pdf-generator (growth-plan, yearly-planner), authorship (content-engine), campaign/execution/recommendation trackers and engagement-state as read views over our records, goldfish-review | After batch 2 |
 | 4 · Need internet or connectors | competitor-scraper, serp-snapshot, tech-seo-auditor, backlink_gap, seo_drift, local-seo-checker, geo-tracker, gsc-ai-performance, macro-signal-tracker, connector_executor/resolver (publish, schedule, launch), embed-c2pa + resolve_model (ad images) | With connectors (network allowlist per tool) |
 | Not used | DMP approval-manager (our approval engine is the gate) | Replaced by design |
@@ -604,7 +604,7 @@ About 16 weeks to the full platform. Week counts are estimates for a 3–4 devel
 
 ### Phase status and next phase (1 Nov 2026, commit `a1850be`)
 
-Phases 0–3 screens, records, approvals and media exports exist. Phase 1.5 — make skills real — is in progress; 73/73 tests pass (incl. design engine and every declared skill tool).
+Phases 0–3 screens, records, approvals and media exports exist. Phase 1.5 — make skills real — is in progress; 78/79 tests pass (1 skipped where audio libraries are not installed).
 
 | Work | Estimate | Done when | Status |
 |---|---|---|---|

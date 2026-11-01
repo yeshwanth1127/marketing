@@ -3,8 +3,9 @@
 const bad=m=>{const e=new Error(m);e.status=400;throw e;};
 export function buildInput(spec,params={}){
  if(!Array.isArray(spec.params))bad('This tool takes no user input');
- const args=[];let stdin='';
+ const args=[];let stdin='';const files=[];
  for(const p of spec.params){
+  if(p.type==='output'){const out=`{box}/${p.path}`;if(p.positional)args.push(out);else args.push(p.flag,out);continue;} // fixed output path, not user input
   let v=params[p.name];const name=p.label||p.name;
   if(v===undefined||v===null||v===''||(p.type==='flag'&&!v)){if(p.required)bad(`${name} is required`);continue;}
   if(p.type==='number'){v=Number(v);if(!Number.isFinite(v))bad(`${name} must be a number`);if(p.min!==undefined&&v<p.min)bad(`${name} must be at least ${p.min}`);if(p.max!==undefined&&v>p.max)bad(`${name} must be at most ${p.max}`);v=String(v);}
@@ -14,9 +15,10 @@ export function buildInput(spec,params={}){
   else if(p.type==='text'){v=String(v);if(v.length>(p.max_length||50000))bad(`${name} is too long`);
    if(p.to==='stdin'||p.to==='file'){stdin=v;if(p.to==='file')args.push(...(p.flag?[p.flag]:[]),'{input_file}');continue;}}
   else if(p.type==='flag'){args.push(p.flag);continue;}
+  else if(p.type==='file'){if(!/^[0-9a-f-]{36}$/i.test(String(v)))bad(`${name}: choose an uploaded file`);files.push({param:p.name,id:String(v),accept:p.accept||'',convert:p.convert||null});v=`{file_${p.name}}`;}
   else bad('Unsupported parameter type');
   if(p.positional)args.push(v);else args.push(p.flag,v);
  }
- return {args,stdin};
+ return {args,stdin,files};
 }
 export const buildArgs=(spec,params)=>buildInput(spec,params).args;

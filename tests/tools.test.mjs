@@ -52,3 +52,48 @@ test('tool inputs are validated (text length, choices) before anything runs',asy
  const r=await request('action',{client_id:client,action:'run-tool',module:'05-content',tool:'content-score',params:{text:'x',type:'tweet'}});assert.equal(r.status,400);
  const r2=await request('action',{client_id:client,action:'run-tool',module:'05-content',tool:'humanize',params:{text:'x'.repeat(60000)}});assert.equal(r2.status,400);
 });
+
+// ---- Batch 2: media tools (talking-head effects, soundtrack mux, audio measurement) ----
+import {runToolForClient} from '../core/tools/tool-job.mjs';
+import crypto from 'node:crypto';
+const ffmpeg=process.env.FFMPEG_BIN||'ffmpeg';
+const hasPy=m=>spawnSync(process.env.EXORA_PYTHON||'python3',['-c','import '+m]).status===0;
+async function addFile(name,mime,make){const fid=crypto.randomUUID();const rel=path.join('uploads',client,fid+'-'+name);const full=path.join(ROOT,'.local',rel);fs.mkdirSync(path.dirname(full),{recursive:true});make(full);
+ await q('INSERT INTO files(id,client_id,name,mime,size,storage_path) VALUES($1,$2,$3,$4,$5,$6)',[fid,client,name,mime,fs.statSync(full).size,rel]);return fid;}
+let video,audio,user;
+test('media fixtures',async()=>{
+ user=(await q("SELECT * FROM users WHERE role='admin' LIMIT 1")).rows[0];
+ video=await addFile('talk.mp4','video/mp4',f=>assert.equal(spawnSync(ffmpeg,['-y','-v','error','-f','lavfi','-i','testsrc2=size=540x960:rate=24:duration=2','-f','lavfi','-i','sine=frequency=220:duration=2','-c:v','libx264','-pix_fmt','yuv420p','-c:a','aac','-shortest',f]).status,0));
+ audio=await addFile('music.wav','audio/wav',f=>assert.equal(spawnSync(ffmpeg,['-y','-v','error','-f','lavfi','-i','sine=frequency=440:duration=4','-ar','48000',f]).status,0));
+});
+test('media tools run in the background queue',async()=>{
+ const r=await request('action',{client_id:client,action:'run-tool',module:'06-design-video',tool:'add-soundtrack',params:{video,audio}});
+ assert.equal(r.status,200);assert.equal(r.data.queued,true);
+ const job=(await q('SELECT * FROM jobs WHERE id=$1',[r.data.job_id])).rows[0];assert.equal(job.type,'tool');
+ await q("UPDATE jobs SET status='completed' WHERE id=$1",[job.id]); // the worker is not running in tests
+});
+test('add-soundtrack (real-sound mux.mjs) writes a video with sound as a client file',async()=>{
+ const c=(await q('SELECT * FROM clients WHERE id=$1',[client])).rows[0];
+ const mod=loadModule('06-design-video',{settings:{}});const spec=mod.tools.scripts.find(s=>s.id==='add-soundtrack');
+ const {args,stdin,files}=buildInput(spec,{video,audio});
+ const r=await runToolForClient({client:c,user,moduleKey:'06-design-video',toolId:'add-soundtrack',args,stdin,files});
+ assert.equal(r.files.length,1);const row=(await q('SELECT * FROM files WHERE id=$1',[r.files[0].id])).rows[0];assert.equal(row.mime,'video/mp4');
+ const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path.join(ROOT,'.local',row.storage_path)],{encoding:'utf8'}).stdout;
+ assert.match(probe,/video/);assert.match(probe,/audio/);
+ assert.equal((await q('SELECT vendor_match FROM tool_runs WHERE id=$1',[r.receipt])).rows[0].vendor_match,true);
+});
+test('talking-head effect (effects fx.py) renders an MP4',{skip:!hasPy('mediapipe')&&'mediapipe not installed (run npm run setup:python)',timeout:600000},async()=>{
+ const c=(await q('SELECT * FROM clients WHERE id=$1',[client])).rows[0];
+ const mod=loadModule('06-design-video',{settings:{}});const spec=mod.tools.scripts.find(s=>s.id==='talking-head-effect');
+ const {args,stdin,files}=buildInput(spec,{effect:'moody',video,width:'720'});
+ const r=await runToolForClient({client:c,user,moduleKey:'06-design-video',toolId:'talking-head-effect',args,stdin,files});
+ assert.equal(r.files.length,1);assert.equal(r.files[0].mime,'video/mp4');
+ assert.equal((await q('SELECT vendor_match FROM tool_runs WHERE id=$1',[r.receipt])).rows[0].vendor_match,true);
+});
+test('audio measurement and loudness (real-sound analyze.py, master.py)',{skip:!hasPy('soundfile')&&'soundfile not installed (run npm run setup:python)'},async()=>{
+ for(const tool of ['audio-measure','loudness']){const r=await request('action',{client_id:client,action:'run-tool',module:'06-design-video',tool,params:{audio}});assert.equal(r.status,200,JSON.stringify(r.data).slice(0,400));assert.ok(r.data.output);}
+});
+test('file inputs are client-scoped and type-checked',async()=>{
+ const r=await request('action',{client_id:client,action:'run-tool',module:'06-design-video',tool:'add-soundtrack',params:{video:audio,audio}});assert.equal(r.status,400);assert.match(r.data.error,/not a video/);
+ const r2=await request('action',{client_id:client,action:'run-tool',module:'06-design-video',tool:'add-soundtrack',params:{video:crypto.randomUUID(),audio}});assert.equal(r2.status,400);
+});

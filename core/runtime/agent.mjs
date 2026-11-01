@@ -21,7 +21,7 @@ export function buildBox(mod,skills,ctx,opts={}){
   fs.cpSync(src,dest,{recursive:true});
   for(const f of fs.readdirSync(dest,{recursive:true}).map(String))if(SCRIPT_EXT.test(f)){
    const rel=`skills/${s.name}/${f}`;const runner=f.endsWith('.mjs')?'node':'python3';
-   allowed.push(`Bash(${runner} ${rel}:*)`);scriptOwner[rel]={skill:s.name,source:s.source,file:f,abs:path.join(src,f)};}
+   allowed.push(`Bash(${runner} ${rel}:*)`);if(runner==='python3')allowed.push(`Bash(python3 -I ${rel}:*)`);scriptOwner[rel]={skill:s.name,source:s.source,file:f,abs:path.join(src,f)};}
  }
  let dmp=null;
  const env={...process.env};for(const k of ['ANTHROPIC_API_KEY','ANTHROPIC_AUTH_TOKEN','ANTHROPIC_BASE_URL'])delete env[k];
@@ -88,7 +88,7 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
   // Receipts: every Bash call that targeted an allowed skill script.
   const receipts=[];
   for(const r of receiptsFromStream(stdout)){
-   const m=r.command.match(/^\s*(?:python3|node)\s+((?:skills\/[\w.-]+|scripts|tools)\/[\w./-]+\.(?:py|mjs))/);
+   const m=r.command.match(/^\s*(?:python3(?:\s+-I)?|node)\s+((?:skills\/[\w.-]+|scripts|tools)\/[\w./-]+\.(?:py|mjs))/);
    let owner=m&&scriptOwner[m[1]];
    if(!owner){const co=commandOwners.find(o=>r.command.trim().startsWith(o.prefix));if(co){const md=fs.readFileSync(path.join(mod.dir,'skills',co.skill,'SKILL.md'));const rid=id();receipts.push(rid);
     await q(`INSERT INTO tool_runs(id,client_id,run_id,module,skill,source,script,skill_sha256,script_sha256,vendor_match,input_sha256,output_sha256,exit_code,duration_ms,error,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
