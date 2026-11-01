@@ -16,8 +16,8 @@ export function prepareDmp(box,scriptsDir,python,env,ctx,{persist=false}={}){
  const client=ctx.client,records=ctx.records||[];
  const latest=k=>records.find(r=>r.kind===k)?.data||{};
  const brand=latest('BrandKit'),strategy=latest('Strategy');
- const slug=slugify(client.name);
- const r=spawnSync(python,['-I',path.join(scriptsDir,'setup.py'),'--create-brand',client.name,'--slug',slug],{cwd:box,env:{...env,CLAUDE_MARKETING_HOME:home},encoding:'utf8',timeout:30000});
+ const slug='c-'+String(client.id).replace(/[^a-f0-9]/gi,'').slice(0,20);
+ const r=spawnSync(python,['-I',path.join(scriptsDir,'setup.py'),'--create-brand',client.brand_name||client.name,'--slug',slug],{cwd:box,env:{...env,CLAUDE_MARKETING_HOME:home},encoding:'utf8',timeout:30000});
  const profilePath=path.join(home,'brands',slug,'profile.json');
  if(!fs.existsSync(profilePath))throw new Error('DMP brand setup failed: '+(r.stdout+r.stderr).slice(-400));
  const p=JSON.parse(fs.readFileSync(profilePath,'utf8'));
@@ -37,7 +37,7 @@ export function prepareDmp(box,scriptsDir,python,env,ctx,{persist=false}={}){
  const langs=list(client.languages);
  p.language.primary_language=langs[0]||'English';
  p.language.content_languages=langs;
- p.language.do_not_translate=[client.name];
+ p.language.do_not_translate=[...new Set([client.brand_name||client.name,client.name])];
  p.updated_at=new Date().toISOString();
  fs.writeFileSync(profilePath,JSON.stringify(p,null,2));
  // Evidence for claim checks: only items the team recorded (BrandKit.evidence), never invented.

@@ -3,6 +3,7 @@
 import fs from 'node:fs';import path from 'node:path';
 import {ROOT,q,tx,id as newId,insert,audit} from '../db/index.mjs';
 import {loadModule} from '../runtime/index.mjs';
+import {contextRecords} from '../clients/tree.mjs';
 import {runScript,scriptSpec} from './runner.mjs';
 const bad=(m,s=400)=>{const e=new Error(m);e.status=s;throw e;};
 export async function resolveInputFiles(clientId,files){
@@ -18,7 +19,7 @@ export async function resolveInputFiles(clientId,files){
 }
 export async function runToolForClient({client,user,moduleKey,toolId,args,stdin,files,save}){
  const mod=loadModule(moduleKey,client);const spec=scriptSpec(mod,toolId);
- const records=(await q('SELECT * FROM records WHERE client_id=$1 ORDER BY created_at DESC',[client.id])).rows;
+ const records=await contextRecords(client);
  const inputFiles=await resolveInputFiles(client.id,files);
  const r=await runScript({client,user,run:null,records},mod,spec.id,{args,stdin,inputFiles});
  if(!r.ok)bad('The tool did not run: '+r.error);

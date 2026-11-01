@@ -7,7 +7,7 @@ import * as engine from '../../modules/06-design-video/skills/exora-design-syste
 export const {compose,normalize:normalizeRaw,audit,LAYOUTS,CANVAS,describe,css,rolesFromPalette}=engine;
 let cached;export const catalog=()=>cached||(cached=JSON.parse(fs.readFileSync(path.join(FONTS,'catalog.json'),'utf8')));
 // BrandKit record data (+ client) → full brand profile.
-export const profileFor=(brandData={},client={})=>normalizeRaw({...brandData,client_name:client.name,languages:brandData.languages||client.languages||[]},catalog());
+export const profileFor=(brandData={},client={})=>normalizeRaw({...brandData,client_name:client.brand_name||client.name,languages:brandData.languages||client.languages||[]},catalog());
 // Fonts a profile actually uses (for copying into a sandbox).
 export function fontsUsed(pr){const t=pr.type;return [...new Set([t.display.font,t.body.font,t.label.font,...Object.values(t.scripts||{})].filter(Boolean))];}
 export function catalogFor(pr){const ids=fontsUsed(pr);return {...catalog(),fonts:catalog().fonts.filter(f=>ids.includes(f.id))};}

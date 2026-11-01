@@ -14,3 +14,7 @@ export async function audit(c,user,client,action,entity,details={}){await c.quer
 export async function insert(c,user,client,kind,title,data={},status='draft',extra={}) {const rid=id();const r=await c.query('INSERT INTO records(id,client_id,kind,title,data,status,created_by,version,parent_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',[rid,client,kind,title,data,status,user?.id||null,extra.version||1,extra.parent_id||null]);await audit(c,user,client,'create:'+kind,rid,{title,status});return r.rows[0];}
 export function fail(message,status=400){const e=new Error(message);e.status=status;throw e;}
 export function requireText(value,label,max=20000){if(typeof value!=='string'||!value.trim()||value.length>max)fail(label+' is required (max '+max+' characters)');return value.trim();}
+// Apply the schema files (all idempotent) once per process, so code updated while the app runs never
+// meets an older database. An advisory lock keeps the app and the worker from applying them at once.
+let schemaPromise=null;
+export function ensureSchema(){return schemaPromise||=(async()=>{const dir=path.join(ROOT,'core/db');const files=fs.readdirSync(dir).filter(f=>/^\d+-.*\.sql$/.test(f)).sort();const c=await pool.connect();try{await c.query('SELECT pg_advisory_lock(714023)');for(const f of files)await c.query(fs.readFileSync(path.join(dir,f),'utf8'));}finally{await c.query('SELECT pg_advisory_unlock(714023)').catch(()=>{});c.release();}})().catch(e=>{schemaPromise=null;throw e;});}
