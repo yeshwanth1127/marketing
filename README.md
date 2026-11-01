@@ -47,7 +47,9 @@ Parallel tracks: SEO/local SEO, AI search, paid media, influencers and team mana
 - `modules/`: the nine module contracts, copied skills, tool allowlists, IO and screen exports
 - `tracks/`: five specialist tracks using the same contract
 - `workers/`: renderer and audio processing boundaries
-- `exora/`: methodology, brand design tokens, compliance and seasonal data
+- `exora/`: methodology, brand profiles (EXORA + test brands), bundled OFL font library, compliance and seasonal data
+
+Design review: `node scripts/design-gallery.mjs` renders every layout for every test brand into `.local/design-gallery/`.
 - `vendor/`: original upstream repositories, untouched with their licences
 - `docs/`: inventory, verification, architecture decisions and delivery status
 

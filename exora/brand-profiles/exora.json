@@ -1,0 +1,5 @@
+{"name":"EXORA","note":"EXORA's own identity. Used only when marketing EXORA itself — never a default for clients.",
+ "profile":{"name":"EXORA","wordmark":"EXORA","handle":"@exora.studio",
+  "colors":{"paper":"#f3f4ef","ink":"#141c18","accent":"#c8f077","support":["#274c3b"]},
+  "type":{"display":{"font":"instrument-serif","weight":400,"tracking":-0.02,"italic_accent":true,"leading":0.96},"body":{"font":"instrument-sans","weight":420},"label":{"font":"jetbrains-mono","case":"upper","tracking":0.12},"scale":"dramatic"},
+  "shape":{"style":"sharp","stroke":2},"motif":"rule","density":"balanced","tones":["ink","paper","accent"],"motion":{"pace":"calm"}}}

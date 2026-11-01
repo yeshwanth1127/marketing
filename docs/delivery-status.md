@@ -10,6 +10,7 @@
 - Client onboarding, uploads, brand colour/font extraction candidates, editable brand voice and profile.
 - Strategy documents, client sign-off review, campaign budgets, calendar slots, UTM scheme, regional seasonal planning dates.
 - Scored hook options with selection, copy/script/caption/CTA editing, editorial claim/disclosure checks.
+- EXORA design engine: brand-neutral method with 10 layout types in 4 placements, full per-client brand profiles (colour roles, type incl. Indic scripts, shape, pattern, density, motion), bundled OFL font library, brand editor with live preview, and a 160-render multi-brand review gallery (`node scripts/design-gallery.mjs`).
 - Actual PNG images, carousel slides and HyperFrames MP4 exports; media download library; original recording denoise, loudness normalization and trimming through FFmpeg.
 - Review queue with reasons, immutable approved assets, revision lineage, separate approval of scheduled posts and ad actions.
 - Durable scheduled jobs that recheck approvals; unconfigured external actions become blocked and never claim publication.
@@ -34,6 +35,6 @@
 
 ## Verification
 
-Production build and TypeScript compilation passed. All 26 integration tests passed. The integration suite covers authentication, isolation, roles, module contracts, generation, approval/version invariants, scheduling authorization, compliance flags, metrics, memory and revocation. HTTP smoke tests cover all seventeen routes plus real queue → carousel → private download → review submission. Local media smoke tests produced image, carousel and a verified twelve-second HyperFrames MP4.
+Production build and TypeScript compilation passed. All 48 integration tests passed (incl. design engine, brand-profile validation and multi-brand renders). The integration suite covers authentication, isolation, roles, module contracts, generation, approval/version invariants, scheduling authorization, compliance flags, metrics, memory and revocation. HTTP smoke tests cover all seventeen routes plus real queue → carousel → private download → review submission. Local media smoke tests produced image, carousel and a verified twelve-second HyperFrames MP4.
 
 Browser sign-in and dashboard were visually inspected. Subsequent browser interaction became unavailable because local browser use was disabled in Work settings; later checks used HTTP, database integration tests and direct output-file inspection.

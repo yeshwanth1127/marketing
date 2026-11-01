@@ -1,0 +1,366 @@
+{
+ "note": "Sample copy for design review renders only. Test brands are fictional; numbers here are placeholders, not evidence.",
+ "kaveri-dental": {
+  "hook": {
+   "kicker": "Before your first visit",
+   "headline": "A cleaning shouldn't feel like a *sales pitch.*",
+   "sub": "What a 30-minute check-up at Kaveri actually includes, and what it doesn't.",
+   "cta": "Book a check-up"
+  },
+  "offer": {
+   "kicker": "First visit",
+   "title": "Check-up, scale & *polish*",
+   "price": "1,499",
+   "was": "2,200",
+   "unit": "one visit",
+   "terms": "New patients only. X-rays charged separately if needed.",
+   "valid": "Till 30 Nov",
+   "cta": "Book on WhatsApp"
+  },
+  "myth-fact": {
+   "myth": "Bleeding gums are normal when you brush hard.",
+   "fact": "Bleeding is your gums asking for *attention*, not a harder brush.",
+   "note": "Dr. Meghana Rao, Periodontist",
+   "cta": "Ask us"
+  },
+  "faq": {
+   "series": "Ask Kaveri",
+   "number": "04",
+   "question": "Does a root canal *hurt?*",
+   "answer": "Under local anaesthesia it feels like a long filling. Most patients go back to work the same day. Mild soreness for a day or two is normal.",
+   "cta": "Book a consult"
+  },
+  "festival": {
+   "festival": "Kannada Rajyotsava",
+   "greeting": "Proud to *smile* in Kannada",
+   "local_line": "ಕನ್ನಡ ರಾಜ್ಯೋತ್ಸವದ ಶುಭಾಶಯಗಳು",
+   "message": "Wishing every family in Bengaluru a bright Rajyotsava.",
+   "signoff": "Team Kaveri, Indiranagar"
+  },
+  "list": {
+   "title": "5 questions to ask *before* braces",
+   "kicker": "Orthodontics",
+   "items": [
+    {
+     "title": "Metal, ceramic or aligners?",
+     "text": "Each suits a different bite and budget."
+    },
+    {
+     "title": "How long, honestly?",
+     "text": "Ask for a range, not a promise."
+    },
+    {
+     "title": "Who adjusts them?",
+     "text": "The same orthodontist every visit matters."
+    },
+    {
+     "title": "What happens after?",
+     "text": "Retainers are part of the plan, not an extra."
+    },
+    {
+     "title": "What's in the price?",
+     "text": "Check if retainers and reviews are included."
+    }
+   ],
+   "cta": "Book an ortho consult"
+  },
+  "before-after": {
+   "title": "Aligner journey",
+   "before": "Gaps you hid in every photo",
+   "after": "A smile you *forget* to hide",
+   "note": "Illustrative. Results vary by case."
+  },
+  "behind-scenes": {
+   "time": "7:40 AM",
+   "place": "Sterilisation room",
+   "note": "Every instrument goes through the autoclave, *every single time.* You'll never see this part. That's the point.",
+   "person": "Shalini, clinic manager"
+  },
+  "proof": {
+   "quote": "I've avoided dentists for ten years. Dr. Rao explained every step *before* doing it. I actually came back.",
+   "name": "Arjun K.",
+   "detail": "Google review",
+   "stat_value": "4.9",
+   "stat_label": "Google rating · sample",
+   "verified": true
+  },
+  "event": {
+   "kicker": "Free camp",
+   "title": "Kids' dental check-up *morning*",
+   "day": "16",
+   "month": "Nov",
+   "weekday": "Sunday",
+   "time": "9 AM – 1 PM",
+   "venue": "Kaveri Dental, Indiranagar",
+   "detail": "Free for ages 3–12 · Register on WhatsApp",
+   "cta": "Reserve a slot"
+  }
+ },
+ "ruh-atelier": {
+  "hook": {
+   "kicker": "Handloom",
+   "headline": "One saree. *Eleven* days on the loom.",
+   "sub": "The Ruh Chanderi edit, woven in Pranpur.",
+   "cta": "Shop the edit"
+  },
+  "offer": {
+   "kicker": "Festive preview",
+   "title": "The Chanderi edit",
+   "price": "18,500",
+   "unit": "from",
+   "terms": "Made to order. Ships in 21 days across India.",
+   "valid": "Preview till 10 Nov",
+   "cta": "Book a fitting"
+  },
+  "myth-fact": {
+   "myth": "Handloom and powerloom look the same.",
+   "fact": "Turn it over. Handloom shows the *hand.*",
+   "note": "Ruh weaving notes",
+   "cta": "Read more"
+  },
+  "faq": {
+   "series": "Care notes",
+   "number": "02",
+   "question": "How do I store a silk saree?",
+   "answer": "Wrap it in muslin, never plastic. Refold along new lines every few months so the creases don't set.",
+   "cta": "Care guide"
+  },
+  "festival": {
+   "festival": "Deepavali",
+   "greeting": "Light, *woven* slowly.",
+   "local_line": "शुभ दीपावली",
+   "message": "From our looms in Pranpur to your homes.",
+   "signoff": "Ruh Atelier, Jaipur"
+  },
+  "list": {
+   "title": "Three ways to drape *one* dupatta",
+   "kicker": "Styling",
+   "items": [
+    {
+     "title": "The Nivi pleat",
+     "text": "Pinned at the shoulder, falling clean."
+    },
+    {
+     "title": "The cape",
+     "text": "Both ends over the back. Hands free."
+    },
+    {
+     "title": "The belt",
+     "text": "Cinched at the waist with a thin leather strap."
+    }
+   ],
+   "cta": "Shop dupattas"
+  },
+  "before-after": {
+   "title": "From yarn",
+   "before_label": "Day 1",
+   "before": "Raw mulberry silk, undyed",
+   "after_label": "Day 11",
+   "after": "The *Ruh* Chanderi",
+   "note": "Process shown, not a transformation claim."
+  },
+  "behind-scenes": {
+   "time": "5:15 PM",
+   "place": "Pranpur, Madhya Pradesh",
+   "note": "The light goes gold an hour before sunset. That's when we *check the zari.*",
+   "person": "Rafiq bhai, master weaver"
+  },
+  "proof": {
+   "quote": "It arrived wrapped like an heirloom. It *is* one now.",
+   "name": "Nandini S.",
+   "detail": "Customer, Mumbai",
+   "verified": true
+  },
+  "event": {
+   "kicker": "Trunk show",
+   "title": "The *Chanderi* trunk show",
+   "day": "22",
+   "month": "Nov",
+   "weekday": "Saturday",
+   "time": "11 AM – 7 PM",
+   "venue": "The Courtyard, C-Scheme, Jaipur",
+   "detail": "By invitation · RSVP on WhatsApp",
+   "cta": "Request an invite"
+  }
+ },
+ "sunkidz": {
+  "hook": {
+   "kicker": "For parents",
+   "headline": "Your 3-year-old is a *scientist.* Treat them like one.",
+   "sub": "Why we swap worksheets for water tables.",
+   "cta": "Book a visit"
+  },
+  "offer": {
+   "kicker": "Admissions 2027",
+   "title": "Visit us, *no fee* to apply",
+   "price": "0",
+   "unit": "application fee",
+   "terms": "For admissions to Playgroup and Nursery, 2027–28 batch.",
+   "valid": "Applications open now",
+   "cta": "Apply on WhatsApp"
+  },
+  "myth-fact": {
+   "myth": "Kids should learn to read before they turn four.",
+   "fact": "At this age, *talking and play* build the reader.",
+   "note": "Our early years team",
+   "cta": "Read our approach"
+  },
+  "faq": {
+   "series": "Parents ask",
+   "number": "07",
+   "question": "What does a *normal day* look like?",
+   "answer": "Circle time, free play, a snack, an outdoor hour, a story and a calm down before pick-up. No homework.",
+   "cta": "See a day"
+  },
+  "festival": {
+   "festival": "Kannada Rajyotsava",
+   "greeting": "Happy *Rajyotsava!*",
+   "local_line": "ಕನ್ನಡ ರಾಜ್ಯೋತ್ಸವದ ಶುಭಾಶಯಗಳು",
+   "message": "Our little ones sang Kannada rhymes all week.",
+   "signoff": "Love, the SunKidz family"
+  },
+  "list": {
+   "title": "4 signs your child is *ready* for preschool",
+   "kicker": "Readiness",
+   "items": [
+    {
+     "title": "They can say what they need",
+     "text": "Words or gestures, both count."
+    },
+    {
+     "title": "They enjoy other kids",
+     "text": "Even if they play side by side."
+    },
+    {
+     "title": "They can be apart from you",
+     "text": "For an hour or two, with a little help."
+    },
+    {
+     "title": "They're curious about everything",
+     "text": "The 'why' phase is a good sign."
+    }
+   ],
+   "cta": "Book a visit"
+  },
+  "before-after": {
+   "title": "First week vs fourth",
+   "before_label": "Week 1",
+   "before": "Tears at the gate",
+   "after_label": "Week 4",
+   "after": "\"Bye amma, *see you!*\"",
+   "note": "Every child settles at their own pace."
+  },
+  "behind-scenes": {
+   "time": "8:50 AM",
+   "place": "HSR Layout campus",
+   "note": "We fill the sand tray and hide *twelve* plastic dinosaurs before the gates open.",
+   "person": "Ms. Divya, lead teacher"
+  },
+  "proof": {
+   "quote": "My daughter asks to go to school on *Sundays.* That says everything.",
+   "name": "Priya M.",
+   "detail": "Parent, HSR Layout",
+   "verified": true
+  },
+  "event": {
+   "kicker": "Open house",
+   "title": "Come play with us on *Sunday*",
+   "day": "16",
+   "month": "Nov",
+   "weekday": "Sunday",
+   "time": "10 AM – 1 PM",
+   "venue": "SunKidz, HSR Layout",
+   "detail": "Free entry · Bring your little one",
+   "cta": "Register on WhatsApp"
+  }
+ },
+ "preview": {
+  "hook": {
+   "kicker": "For our customers",
+   "headline": "Good work speaks *quietly.*",
+   "sub": "A sample line to preview your brand in this layout.",
+   "cta": "Learn more"
+  },
+  "offer": {
+   "kicker": "Sample offer",
+   "title": "Your package *name*",
+   "price": "2,499",
+   "was": "3,000",
+   "unit": "per visit",
+   "terms": "Sample terms. Replace with the real conditions.",
+   "valid": "Till 30 Nov",
+   "cta": "Book now"
+  },
+  "myth-fact": {
+   "myth": "A common belief people repeat.",
+   "fact": "The *verified* correction, in plain words.",
+   "note": "Your expert",
+   "cta": "Ask us"
+  },
+  "faq": {
+   "series": "You ask",
+   "number": "01",
+   "question": "A question customers *really* ask?",
+   "answer": "A calm, short answer in two or three sentences. It explains, it does not sell.",
+   "cta": "Talk to us"
+  },
+  "festival": {
+   "festival": "Deepavali",
+   "greeting": "Wishing you a *bright* Deepavali",
+   "local_line": "शुभ दीपावली",
+   "message": "From all of us, to all of you.",
+   "signoff": "With warmth"
+  },
+  "list": {
+   "title": "4 things to *know* first",
+   "kicker": "Guide",
+   "items": [
+    {
+     "title": "The first point",
+     "text": "One supporting line."
+    },
+    {
+     "title": "The second point",
+     "text": "One supporting line."
+    },
+    {
+     "title": "The third point",
+     "text": "One supporting line."
+    },
+    {
+     "title": "The fourth point",
+     "text": "One supporting line."
+    }
+   ],
+   "cta": "Save this"
+  },
+  "before-after": {
+   "title": "Sample change",
+   "before": "How it was",
+   "after": "How it *is* now",
+   "note": "Illustrative preview."
+  },
+  "behind-scenes": {
+   "time": "8:30 AM",
+   "place": "Our workspace",
+   "note": "What happens before anyone sees the *finished* work.",
+   "person": "A team member"
+  },
+  "proof": {
+   "quote": "A real customer's words go here, *exactly* as they said them.",
+   "name": "Customer name",
+   "detail": "Google review"
+  },
+  "event": {
+   "kicker": "Event",
+   "title": "Your event *name*",
+   "day": "16",
+   "month": "Nov",
+   "weekday": "Sunday",
+   "time": "10 AM – 1 PM",
+   "venue": "Your venue, City",
+   "detail": "Free entry · Register on WhatsApp",
+   "cta": "Register"
+  }
+ }
+}

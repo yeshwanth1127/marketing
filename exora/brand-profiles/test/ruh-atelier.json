@@ -1,0 +1,6 @@
+{"name":"Ruh Atelier","note":"Fictional test brand: handloom fashion label, Jaipur.","industry":"Fashion label","languages":["English","Hindi"],
+ "profile":{"name":"Ruh Atelier","wordmark":"RUH","handle":"@ruh.atelier",
+  "colors":{"paper":"#ebe4d6","ink":"#15110f","accent":"#8c1c1c","surface":"#ded5c4"},
+  "type":{"display":{"font":"gloock","weight":400,"tracking":-0.03,"italic_accent":false,"leading":0.98},"body":{"font":"dm-sans","weight":400},"label":{"font":"ibm-plex-mono","case":"upper","tracking":0.18,"weight":500},"scale":"dramatic","scripts":{"Hindi":"tiro-devanagari-hindi"}},
+  "shape":{"style":"sharp","radius":0,"stroke":1.5},"motif":"rule","density":"dense","tones":["paper","ink"],"motion":{"pace":"calm"},
+  "rules":{"do":["Editorial restraint","Lots of ink"],"dont":["Rounded shapes","More than one accent use"]}}}

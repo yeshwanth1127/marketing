@@ -1,0 +1,6 @@
+{"name":"Kaveri Dental Studio","note":"Fictional test brand: calm premium clinic, Bengaluru.","industry":"Dental clinic","languages":["English","Kannada"],
+ "profile":{"name":"Kaveri Dental Studio","wordmark":"Kaveri","handle":"@kaveri.dental",
+  "colors":{"paper":"#f2efe8","ink":"#0f2b2c","accent":"#ff7a59","surface":"#e6e2d8"},
+  "type":{"display":{"font":"instrument-serif","weight":400,"tracking":-0.015,"italic_accent":true,"leading":1.0},"body":{"font":"instrument-sans","weight":420},"label":{"font":"instrument-sans","case":"upper","tracking":0.16,"weight":560},"scale":"balanced","scripts":{"Kannada":"noto-sans-kannada"}},
+  "shape":{"style":"round","radius":40,"stroke":2},"motif":"arcs","density":"airy","tones":["paper","ink","accent"],"motion":{"pace":"calm"},
+  "rules":{"do":["Generous space","One coral moment per frame"],"dont":["Teeth close-ups","Clinical blue"]}}}

@@ -1,0 +1,755 @@
+{
+ "version": 1,
+ "note": "Bundled because renders run offline. All fonts are SIL OFL 1.1; licence text in each folder. Rebuild with scripts/build-fonts.py.",
+ "fonts": [
+  {
+   "id": "fraunces",
+   "family": "Fraunces",
+   "role": "serif",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Soft, characterful variable serif with optical sizes. Warm editorial, food, wellness, kids.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/fraunces",
+   "faces": [
+    {
+     "file": "Fraunces-SOFT-WONK-opsz-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {
+      "opsz": [
+       9.0,
+       144.0
+      ],
+      "SOFT": [
+       0.0,
+       100.0
+      ],
+      "WONK": [
+       0.0,
+       1.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "Fraunces-Italic-SOFT-WONK-opsz-wght.woff",
+     "style": "italic",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {
+      "opsz": [
+       9.0,
+       144.0
+      ],
+      "SOFT": [
+       0.0,
+       100.0
+      ],
+      "WONK": [
+       0.0,
+       1.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "instrument-serif",
+   "family": "Instrument Serif",
+   "role": "serif",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Condensed display serif. Quiet luxury, clinics, studios, architecture.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/instrumentserif",
+   "faces": [
+    {
+     "file": "InstrumentSerif-Regular.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "InstrumentSerif-Italic.woff",
+     "style": "italic",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "gloock",
+   "family": "Gloock",
+   "role": "serif",
+   "scripts": [
+    "latin"
+   ],
+   "note": "High-contrast heavy serif. Fashion, jewellery, statement headlines.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/gloock",
+   "faces": [
+    {
+     "file": "Gloock-Regular.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "dm-serif-display",
+   "family": "DM Serif Display",
+   "role": "serif",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Classic display serif. Hospitality, legal, heritage.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/dmserifdisplay",
+   "faces": [
+    {
+     "file": "DMSerifDisplay-Regular.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "DMSerifDisplay-Italic.woff",
+     "style": "italic",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "playfair-display",
+   "family": "Playfair Display",
+   "role": "serif",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Transitional display serif, wide weight range. Weddings, beauty, events.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/playfairdisplay",
+   "faces": [
+    {
+     "file": "PlayfairDisplay-wght.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      900
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "PlayfairDisplay-Italic-wght.woff",
+     "style": "italic",
+     "weight": [
+      400,
+      900
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "young-serif",
+   "family": "Young Serif",
+   "role": "serif",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Chunky old-style serif. Bakeries, cafes, craft.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/youngserif",
+   "faces": [
+    {
+     "file": "YoungSerif-Regular.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "bricolage-grotesque",
+   "family": "Bricolage Grotesque",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Expressive grotesque with width axis. Youth, education, D2C, energy.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/bricolagegrotesque",
+   "faces": [
+    {
+     "file": "BricolageGrotesque-opsz-wdth-wght.woff",
+     "style": "normal",
+     "weight": [
+      200,
+      800
+     ],
+     "axes": {
+      "opsz": [
+       12.0,
+       96.0
+      ],
+      "wdth": [
+       75.0,
+       100.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "instrument-sans",
+   "family": "Instrument Sans",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Precise neo-grotesque. Body and UI for premium brands.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/instrumentsans",
+   "faces": [
+    {
+     "file": "InstrumentSans-wdth-wght.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      700
+     ],
+     "axes": {
+      "wdth": [
+       75.0,
+       100.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "InstrumentSans-Italic-wdth-wght.woff",
+     "style": "italic",
+     "weight": [
+      400,
+      700
+     ],
+     "axes": {
+      "wdth": [
+       75.0,
+       100.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "dm-sans",
+   "family": "DM Sans",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Friendly geometric sans. Reliable body text.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/dmsans",
+   "faces": [
+    {
+     "file": "DMSans-opsz-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      1000
+     ],
+     "axes": {
+      "opsz": [
+       9.0,
+       40.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "DMSans-Italic-opsz-wght.woff",
+     "style": "italic",
+     "weight": [
+      100,
+      1000
+     ],
+     "axes": {
+      "opsz": [
+       9.0,
+       40.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "manrope",
+   "family": "Manrope",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Modern semi-condensed sans. Fintech, SaaS, real estate.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/manrope",
+   "faces": [
+    {
+     "file": "Manrope-wght.woff",
+     "style": "normal",
+     "weight": [
+      200,
+      800
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "archivo",
+   "family": "Archivo",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Grotesque with 62–125 width axis. Condensed sale and sport headlines.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/archivo",
+   "faces": [
+    {
+     "file": "Archivo-wdth-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {
+      "wdth": [
+       62.0,
+       125.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "Archivo-Italic-wdth-wght.woff",
+     "style": "italic",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {
+      "wdth": [
+       62.0,
+       125.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "space-grotesk",
+   "family": "Space Grotesk",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Technical grotesque. Tech, gyms, events.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/spacegrotesk",
+   "faces": [
+    {
+     "file": "SpaceGrotesk-wght.woff",
+     "style": "normal",
+     "weight": [
+      300,
+      700
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "unbounded",
+   "family": "Unbounded",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Wide rounded display. Streetwear, music, youth events.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/unbounded",
+   "faces": [
+    {
+     "file": "Unbounded-wght.woff",
+     "style": "normal",
+     "weight": [
+      200,
+      900
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "hanken-grotesk",
+   "family": "Hanken Grotesk",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Neutral grotesque. Body text.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/hankengrotesk",
+   "faces": [
+    {
+     "file": "HankenGrotesk-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "HankenGrotesk-Italic-wght.woff",
+     "style": "italic",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "syne",
+   "family": "Syne",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Art-school display with wide bold cuts. Galleries, creative studios.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/syne",
+   "faces": [
+    {
+     "file": "Syne-wght.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      800
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "familjen-grotesk",
+   "family": "Familjen Grotesk",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Characterful grotesque. Lifestyle, retail.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/familjengrotesk",
+   "faces": [
+    {
+     "file": "FamiljenGrotesk-wght.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      700
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "FamiljenGrotesk-Italic-wght.woff",
+     "style": "italic",
+     "weight": [
+      400,
+      700
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "anybody",
+   "family": "Anybody",
+   "role": "sans",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Ultra-flexible width (50–150). Posters, sale events.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/anybody",
+   "faces": [
+    {
+     "file": "Anybody-wdth-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {
+      "wdth": [
+       50.0,
+       150.0
+      ]
+     },
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "jetbrains-mono",
+   "family": "JetBrains Mono",
+   "role": "mono",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Mono for labels, indexes and data.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/jetbrainsmono",
+   "faces": [
+    {
+     "file": "JetBrainsMono-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      800
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "ibm-plex-mono",
+   "family": "IBM Plex Mono",
+   "role": "mono",
+   "scripts": [
+    "latin"
+   ],
+   "note": "Humanist mono for labels.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/ibmplexmono",
+   "faces": [
+    {
+     "file": "IBMPlexMono-Regular.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    },
+    {
+     "file": "IBMPlexMono-Medium.woff",
+     "style": "normal",
+     "weight": [
+      500,
+      500
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD"
+    }
+   ]
+  },
+  {
+   "id": "noto-sans-devanagari",
+   "family": "Noto Sans Devanagari",
+   "role": "sans",
+   "scripts": [
+    "devanagari"
+   ],
+   "note": "Hindi / Marathi body and display.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/notosansdevanagari",
+   "faces": [
+    {
+     "file": "NotoSansDevanagari-wdth-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {
+      "wdth": [
+       62.5,
+       100.0
+      ]
+     },
+     "unicode_range": "U+0020-007E,U+00A0,U+2013-2014,U+2018-201D,U+2022,U+2026,U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20A8,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF"
+    }
+   ]
+  },
+  {
+   "id": "noto-sans-kannada",
+   "family": "Noto Sans Kannada",
+   "role": "sans",
+   "scripts": [
+    "kannada"
+   ],
+   "note": "Kannada body and display.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/notosanskannada",
+   "faces": [
+    {
+     "file": "NotoSansKannada-wdth-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {
+      "wdth": [
+       62.5,
+       100.0
+      ]
+     },
+     "unicode_range": "U+0020-007E,U+00A0,U+2013-2014,U+2018-201D,U+2022,U+2026,U+0C80-0CFF,U+1CD0-1CF9,U+200C-200D,U+20B9,U+25CC"
+    }
+   ]
+  },
+  {
+   "id": "noto-sans-tamil",
+   "family": "Noto Sans Tamil",
+   "role": "sans",
+   "scripts": [
+    "tamil"
+   ],
+   "note": "Tamil body and display.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/notosanstamil",
+   "faces": [
+    {
+     "file": "NotoSansTamil-wdth-wght.woff",
+     "style": "normal",
+     "weight": [
+      100,
+      900
+     ],
+     "axes": {
+      "wdth": [
+       62.5,
+       100.0
+      ]
+     },
+     "unicode_range": "U+0020-007E,U+00A0,U+2013-2014,U+2018-201D,U+2022,U+2026,U+0B80-0BFF,U+200C-200D,U+20B9,U+25CC"
+    }
+   ]
+  },
+  {
+   "id": "baloo-2",
+   "family": "Baloo 2",
+   "role": "sans",
+   "scripts": [
+    "latin",
+    "devanagari"
+   ],
+   "note": "Rounded friendly Latin + Devanagari. Kids, snacks, local retail.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/baloo2",
+   "faces": [
+    {
+     "file": "Baloo2-wght.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      800
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD,U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20A8,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF"
+    }
+   ]
+  },
+  {
+   "id": "tiro-devanagari-hindi",
+   "family": "Tiro Devanagari Hindi",
+   "role": "serif",
+   "scripts": [
+    "latin",
+    "devanagari"
+   ],
+   "note": "Literary Devanagari serif. Festive, heritage, premium Hindi.",
+   "licence": "SIL Open Font License 1.1",
+   "source": "github.com/google/fonts/ofl/tirodevanagarihindi",
+   "faces": [
+    {
+     "file": "TiroDevanagariHindi-Regular.woff",
+     "style": "normal",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD,U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20A8,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF"
+    },
+    {
+     "file": "TiroDevanagariHindi-Italic.woff",
+     "style": "italic",
+     "weight": [
+      400,
+      400
+     ],
+     "axes": {},
+     "unicode_range": "U+0000-00FF,U+0100-017F,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0300-0301,U+0303-0304,U+0308,U+0327,U+2000-206F,U+2074,U+20AC,U+20B9,U+2122,U+2190-2199,U+2212,U+2215,U+2713,U+2715,U+2192,U+2197,U+25CF,U+FEFF,U+FFFD,U+0900-097F,U+1CD0-1CF9,U+200C-200D,U+20A8,U+20B9,U+25CC,U+A830-A839,U+A8E0-A8FF"
+    }
+   ]
+  }
+ ]
+}

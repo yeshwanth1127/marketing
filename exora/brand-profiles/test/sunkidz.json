@@ -1,0 +1,6 @@
+{"name":"SunKidz","note":"Pilot client (illustrative): preschool, Bengaluru.","industry":"Early childhood education","languages":["English","Kannada","Hindi"],
+ "profile":{"name":"SunKidz","wordmark":"SunKidz","handle":"@sunkidz.blr",
+  "colors":{"paper":"#fff7e3","ink":"#1b2559","accent":"#ffc42e","support":["#f2542d","#3bb273"]},
+  "type":{"display":{"font":"bricolage-grotesque","weight":800,"width":88,"tracking":-0.022,"italic_accent":false,"leading":0.96},"body":{"font":"dm-sans","weight":450},"label":{"font":"bricolage-grotesque","case":"upper","tracking":0.08,"weight":700},"scale":"dramatic","scripts":{"Kannada":"noto-sans-kannada","Hindi":"noto-sans-devanagari"}},
+  "shape":{"style":"round","radius":36,"stroke":3},"motif":"kolam","density":"balanced","tones":["paper","accent","ink"],"motion":{"pace":"punchy"},
+  "rules":{"do":["Big friendly numerals","Sunflower yellow as the hero colour"],"dont":["Clip-art children","Comic Sans energy"]}}}
