@@ -1,0 +1,2 @@
+// Boundary check for untrusted records. This is a signal, not a complete injection detector.
+export function inspectUntrusted(value){const text=JSON.stringify(value);const patterns=[/ignore (all |any |the )?(previous|prior|system) instructions/i,/reveal (the |your )?(api key|system prompt|secret)/i,/(send|upload|exfiltrate).{0,60}(api.key|credentials|environment variables)/i,/<\/?(system|developer)>/i];return patterns.filter(p=>p.test(text)).map(p=>({type:'instruction_in_untrusted_data',pattern:p.source}));}

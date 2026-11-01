@@ -1,0 +1,21 @@
+CREATE TABLE IF NOT EXISTS users(id uuid PRIMARY KEY, name text NOT NULL, email text UNIQUE NOT NULL, password_hash text NOT NULL, role text NOT NULL CHECK(role IN ('admin','marketer','reviewer')), active boolean NOT NULL DEFAULT true, created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS sessions(token_hash text PRIMARY KEY,user_id uuid NOT NULL REFERENCES users(id), expires_at timestamptz NOT NULL);
+CREATE TABLE IF NOT EXISTS clients(id uuid PRIMARY KEY,name text NOT NULL,industry text NOT NULL,city text NOT NULL,languages jsonb NOT NULL DEFAULT '["English"]',data jsonb NOT NULL DEFAULT '{}',settings jsonb NOT NULL DEFAULT '{}',created_by uuid REFERENCES users(id),created_at timestamptz NOT NULL DEFAULT now(),status text NOT NULL DEFAULT 'active',version integer NOT NULL DEFAULT 1);
+CREATE TABLE IF NOT EXISTS memberships(user_id uuid REFERENCES users(id),client_id uuid REFERENCES clients(id),PRIMARY KEY(user_id,client_id));
+CREATE TABLE IF NOT EXISTS records(id uuid PRIMARY KEY,client_id uuid NOT NULL REFERENCES clients(id),kind text NOT NULL CHECK(kind IN ('BrandKit','Strategy','Campaign','Idea','Asset','Approval','Post','Ad','Metric','Report','Learning','Task')),title text NOT NULL,status text NOT NULL DEFAULT 'draft',version integer NOT NULL DEFAULT 1,parent_id uuid REFERENCES records(id),data jsonb NOT NULL DEFAULT '{}',created_by uuid REFERENCES users(id),created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS records_client_kind ON records(client_id,kind,created_at DESC);
+CREATE TABLE IF NOT EXISTS audit(id bigserial PRIMARY KEY,client_id uuid REFERENCES clients(id),actor_id uuid REFERENCES users(id),action text NOT NULL,entity_id uuid,details jsonb NOT NULL DEFAULT '{}',created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS jobs(id uuid PRIMARY KEY,client_id uuid NOT NULL REFERENCES clients(id),type text NOT NULL,payload jsonb NOT NULL DEFAULT '{}',status text NOT NULL DEFAULT 'queued',run_at timestamptz NOT NULL DEFAULT now(),locked_at timestamptz,attempts integer NOT NULL DEFAULT 0,result jsonb,error text,created_by uuid REFERENCES users(id),created_at timestamptz NOT NULL DEFAULT now(),updated_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS jobs_due ON jobs(status,run_at);
+CREATE TABLE IF NOT EXISTS files(id uuid PRIMARY KEY,client_id uuid NOT NULL REFERENCES clients(id),name text NOT NULL,mime text NOT NULL,size bigint NOT NULL,storage_path text NOT NULL,created_by uuid REFERENCES users(id),created_at timestamptz NOT NULL DEFAULT now());
+CREATE TABLE IF NOT EXISTS runs(id uuid PRIMARY KEY,client_id uuid NOT NULL REFERENCES clients(id),module text NOT NULL,provider text NOT NULL,status text NOT NULL,skill_count integer NOT NULL DEFAULT 0,output_ids jsonb NOT NULL DEFAULT '[]',error text,created_by uuid REFERENCES users(id),created_at timestamptz NOT NULL DEFAULT now());
+CREATE OR REPLACE FUNCTION protect_approved_asset() RETURNS trigger AS $$ BEGIN
+ IF OLD.kind='Asset' AND OLD.status IN ('approved','scheduled','published','archived') AND (NEW.data IS DISTINCT FROM OLD.data OR NEW.title IS DISTINCT FROM OLD.title OR NEW.version<>OLD.version OR NEW.client_id<>OLD.client_id OR NEW.kind<>OLD.kind OR NEW.status NOT IN ('approved','scheduled','published','archived')) THEN RAISE EXCEPTION 'Approved assets are immutable. Create a new version.'; END IF;
+ RETURN NEW; END; $$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS asset_immutable ON records;
+CREATE TRIGGER asset_immutable BEFORE UPDATE ON records FOR EACH ROW EXECUTE FUNCTION protect_approved_asset();
+CREATE OR REPLACE FUNCTION reject_audit_changes() RETURNS trigger AS $$ BEGIN RAISE EXCEPTION 'Audit entries cannot be modified or deleted'; END; $$ LANGUAGE plpgsql;
+DROP TRIGGER IF EXISTS audit_immutable ON audit;
+CREATE TRIGGER audit_immutable BEFORE UPDATE OR DELETE ON audit FOR EACH ROW EXECUTE FUNCTION reject_audit_changes();
+CREATE UNIQUE INDEX IF NOT EXISTS one_pending_approval ON records(client_id,(data->>'target_id')) WHERE kind='Approval' AND status='awaiting_review';
+CREATE UNIQUE INDEX IF NOT EXISTS one_live_schedule ON records(client_id,(data->>'asset_id')) WHERE kind='Post' AND status IN ('awaiting_review','approved','scheduled','blocked','published');

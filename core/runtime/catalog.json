@@ -1,0 +1,1042 @@
+[
+  {
+    "key": "01-onboard",
+    "name": "Onboard",
+    "tagline": "Client foundations",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "BrandKit"
+    ],
+    "writes": [
+      "BrandKit"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "brand-setup",
+      "client-onboarding",
+      "region-config",
+      "language-config"
+    ],
+    "skills": [
+      {
+        "name": "client-onboarding",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/client-onboarding/SKILL.md"
+      },
+      {
+        "name": "brand-setup",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/brand-setup/SKILL.md"
+      },
+      {
+        "name": "import-guidelines",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/import-guidelines/SKILL.md"
+      },
+      {
+        "name": "region-config",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/region-config/SKILL.md"
+      },
+      {
+        "name": "language-config",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/language-config/SKILL.md"
+      },
+      {
+        "name": "audience-personas",
+        "source": "OT",
+        "path": "claude-content-skills/skills/audience-personas/SKILL.md"
+      },
+      {
+        "name": "ig-profile",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-profile/SKILL.md"
+      },
+      {
+        "name": "voice-builder",
+        "source": "CF",
+        "path": "social-media-skills/skills/voice-builder/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "02-strategy",
+    "name": "Strategy",
+    "tagline": "Find the direction",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Learning"
+    ],
+    "writes": [
+      "Strategy"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "growth-plan",
+      "positioning-audit",
+      "offers"
+    ],
+    "skills": [
+      {
+        "name": "competitor-analysis",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/competitor-analysis/SKILL.md"
+      },
+      {
+        "name": "market-weather",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/market-weather/SKILL.md"
+      },
+      {
+        "name": "audience-intelligence",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/audience-intelligence/SKILL.md"
+      },
+      {
+        "name": "funnel-architect",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/funnel-architect/SKILL.md"
+      },
+      {
+        "name": "growth-plan",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/growth-plan/SKILL.md"
+      },
+      {
+        "name": "competitor-teardown",
+        "source": "OT",
+        "path": "claude-content-skills/skills/competitor-teardown/SKILL.md"
+      },
+      {
+        "name": "competitor-positioning",
+        "source": "OT",
+        "path": "claude-content-skills/skills/competitor-positioning/SKILL.md"
+      },
+      {
+        "name": "positioning-audit",
+        "source": "OT",
+        "path": "claude-content-skills/skills/positioning-audit/SKILL.md"
+      },
+      {
+        "name": "offers",
+        "source": "CH",
+        "path": "marketingskills/skills/offers/SKILL.md"
+      },
+      {
+        "name": "marketing-psychology",
+        "source": "CH",
+        "path": "marketingskills/skills/marketing-psychology/SKILL.md"
+      },
+      {
+        "name": "pricing",
+        "source": "CH",
+        "path": "marketingskills/skills/pricing/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "03-plan",
+    "name": "Plan",
+    "tagline": "Make every slot count",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Strategy",
+      "Learning"
+    ],
+    "writes": [
+      "Campaign"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "campaign-plan",
+      "content-calendar",
+      "utm-campaign-plan"
+    ],
+    "skills": [
+      {
+        "name": "campaign-plan",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/campaign-plan/SKILL.md"
+      },
+      {
+        "name": "media-plan",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/media-plan/SKILL.md"
+      },
+      {
+        "name": "budget-optimizer",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/budget-optimizer/SKILL.md"
+      },
+      {
+        "name": "yearly-planner",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/yearly-planner/SKILL.md"
+      },
+      {
+        "name": "campaign-brief",
+        "source": "OT",
+        "path": "claude-content-skills/skills/campaign-brief/SKILL.md"
+      },
+      {
+        "name": "content-pillar-builder",
+        "source": "OT",
+        "path": "claude-content-skills/skills/content-pillar-builder/SKILL.md"
+      },
+      {
+        "name": "content-calendar",
+        "source": "OT",
+        "path": "claude-content-skills/skills/content-calendar/SKILL.md"
+      },
+      {
+        "name": "series-planner",
+        "source": "OT",
+        "path": "claude-content-skills/skills/series-planner/SKILL.md"
+      },
+      {
+        "name": "best-time-scheduler",
+        "source": "OT",
+        "path": "claude-content-skills/skills/best-time-scheduler/SKILL.md"
+      },
+      {
+        "name": "utm-campaign-plan",
+        "source": "OT",
+        "path": "claude-content-skills/skills/utm-campaign-plan/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "04-hooks",
+    "name": "Ideas & hooks",
+    "tagline": "Earn the first three seconds",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Strategy",
+      "Campaign",
+      "Learning"
+    ],
+    "writes": [
+      "Idea"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "viral-hook-writer",
+      "ig-reel",
+      "ab-hook-tester"
+    ],
+    "skills": [
+      {
+        "name": "content-research",
+        "source": "OT",
+        "path": "claude-content-skills/skills/content-research/SKILL.md"
+      },
+      {
+        "name": "trend-spotter",
+        "source": "OT",
+        "path": "claude-content-skills/skills/trend-spotter/SKILL.md"
+      },
+      {
+        "name": "reel-analyzer",
+        "source": "OT",
+        "path": "claude-content-skills/skills/reel-analyzer/SKILL.md"
+      },
+      {
+        "name": "hook-mining",
+        "source": "OT",
+        "path": "claude-content-skills/skills/hook-mining/SKILL.md"
+      },
+      {
+        "name": "viral-hook-writer",
+        "source": "OT",
+        "path": "claude-content-skills/skills/viral-hook-writer/SKILL.md"
+      },
+      {
+        "name": "ab-hook-tester",
+        "source": "OT",
+        "path": "claude-content-skills/skills/ab-hook-tester/SKILL.md"
+      },
+      {
+        "name": "hashtag-keyword-research",
+        "source": "OT",
+        "path": "claude-content-skills/skills/hashtag-keyword-research/SKILL.md"
+      },
+      {
+        "name": "ig-viral",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-viral/SKILL.md"
+      },
+      {
+        "name": "ig-reel",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-reel/SKILL.md"
+      },
+      {
+        "name": "watch-video",
+        "source": "OW",
+        "path": "ootto-watch/SKILL.md"
+      },
+      {
+        "name": "keyword-research",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/keyword-research/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "05-content",
+    "name": "Content",
+    "tagline": "Words that move people",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Strategy",
+      "Campaign",
+      "Idea"
+    ],
+    "writes": [
+      "Asset"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "reel-scripter",
+      "on-screen-text-writer",
+      "caption-and-hashtags",
+      "cta-writer",
+      "check",
+      "verify-claims"
+    ],
+    "skills": [
+      {
+        "name": "reel-scripter",
+        "source": "OT",
+        "path": "claude-content-skills/skills/reel-scripter/SKILL.md"
+      },
+      {
+        "name": "on-screen-text-writer",
+        "source": "OT",
+        "path": "claude-content-skills/skills/on-screen-text-writer/SKILL.md"
+      },
+      {
+        "name": "caption-and-hashtags",
+        "source": "OT",
+        "path": "claude-content-skills/skills/caption-and-hashtags/SKILL.md"
+      },
+      {
+        "name": "cta-writer",
+        "source": "OT",
+        "path": "claude-content-skills/skills/cta-writer/SKILL.md"
+      },
+      {
+        "name": "carousel-builder",
+        "source": "OT",
+        "path": "claude-content-skills/skills/carousel-builder/SKILL.md"
+      },
+      {
+        "name": "story-sequencer",
+        "source": "OT",
+        "path": "claude-content-skills/skills/story-sequencer/SKILL.md"
+      },
+      {
+        "name": "content-repurposer",
+        "source": "OT",
+        "path": "claude-content-skills/skills/content-repurposer/SKILL.md"
+      },
+      {
+        "name": "ig-caption",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-caption/SKILL.md"
+      },
+      {
+        "name": "ig-human",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-human/SKILL.md"
+      },
+      {
+        "name": "copywriting",
+        "source": "CH",
+        "path": "marketingskills/skills/copywriting/SKILL.md"
+      },
+      {
+        "name": "copy-editing",
+        "source": "CH",
+        "path": "marketingskills/skills/copy-editing/SKILL.md"
+      },
+      {
+        "name": "content-engine",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/content-engine/SKILL.md"
+      },
+      {
+        "name": "email-sequence",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/email-sequence/SKILL.md"
+      },
+      {
+        "name": "video-script",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/video-script/SKILL.md"
+      },
+      {
+        "name": "translate-content",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/translate-content/SKILL.md"
+      },
+      {
+        "name": "localize-campaign",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/localize-campaign/SKILL.md"
+      },
+      {
+        "name": "multilingual-score",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/multilingual-score/SKILL.md"
+      },
+      {
+        "name": "check",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/check/SKILL.md"
+      },
+      {
+        "name": "verify-claims",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/verify-claims/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "06-design-video",
+    "name": "Design & video",
+    "tagline": "Bring the brand to life",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Campaign",
+      "Asset"
+    ],
+    "writes": [
+      "Asset"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "motion-doctrine",
+      "ad-creative",
+      "hyperframes",
+      "captions-overlay"
+    ],
+    "skills": [
+      {
+        "name": "viral-carousel",
+        "source": "OT",
+        "path": "claude-content-skills/skills/viral-carousel/SKILL.md"
+      },
+      {
+        "name": "cover-thumbnail-brief",
+        "source": "OT",
+        "path": "claude-content-skills/skills/cover-thumbnail-brief/SKILL.md"
+      },
+      {
+        "name": "b-roll-shot-list",
+        "source": "OT",
+        "path": "claude-content-skills/skills/b-roll-shot-list/SKILL.md"
+      },
+      {
+        "name": "ad-creative",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/ad-creative/SKILL.md"
+      },
+      {
+        "name": "youtube-thumbnail",
+        "source": "CF",
+        "path": "social-media-skills/skills/youtube-thumbnail/SKILL.md"
+      },
+      {
+        "name": "graphic-designer",
+        "source": "CF",
+        "path": "social-media-skills/skills/graphic-designer/SKILL.md"
+      },
+      {
+        "name": "motion-doctrine",
+        "source": "HF",
+        "path": "hyperframes/.claude/skills/motion-doctrine/SKILL.md"
+      },
+      {
+        "name": "hyperframes",
+        "source": "HF",
+        "path": "hyperframes/skills/hyperframes/SKILL.md"
+      },
+      {
+        "name": "hyperframes-cli",
+        "source": "HF",
+        "path": "hyperframes/skills/hyperframes-cli/SKILL.md"
+      },
+      {
+        "name": "captions-overlay",
+        "source": "HF",
+        "path": "hyperframes/.claude/skills/captions-overlay/SKILL.md"
+      },
+      {
+        "name": "media-use",
+        "source": "HF",
+        "path": "hyperframes/skills/media-use/SKILL.md"
+      },
+      {
+        "name": "slideshow",
+        "source": "HF",
+        "path": "hyperframes/skills/slideshow/SKILL.md"
+      },
+      {
+        "name": "hyperframes-registry",
+        "source": "HF",
+        "path": "hyperframes/skills/hyperframes-registry/SKILL.md"
+      },
+      {
+        "name": "clean-cut",
+        "source": "YT",
+        "path": "claude-youtube-editor/.claude/skills/clean-cut/SKILL.md"
+      },
+      {
+        "name": "clean-audio",
+        "source": "YT",
+        "path": "claude-youtube-editor/.claude/skills/clean-audio/SKILL.md"
+      },
+      {
+        "name": "suggest-sfx",
+        "source": "YT",
+        "path": "claude-youtube-editor/.claude/skills/suggest-sfx/SKILL.md"
+      },
+      {
+        "name": "effects",
+        "source": "VFX",
+        "path": "claude-video-effects/SKILL.md"
+      },
+      {
+        "name": "real-sound",
+        "source": "EA",
+        "path": "earshot/skills/real-sound/SKILL.md"
+      },
+      {
+        "name": "earshot",
+        "source": "EA",
+        "path": "earshot/skills/earshot/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "07-approve",
+    "name": "Approvals",
+    "tagline": "A human behind every decision",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "Asset",
+      "Strategy",
+      "Post",
+      "Ad"
+    ],
+    "writes": [
+      "Approval"
+    ],
+    "approval_required": true,
+    "defaults": [],
+    "skills": []
+  },
+  {
+    "key": "08-publish",
+    "name": "Publish",
+    "tagline": "The right moment, everywhere",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "Asset",
+      "Approval"
+    ],
+    "writes": [
+      "Post",
+      "Ad"
+    ],
+    "approval_required": true,
+    "defaults": [
+      "schedule-social"
+    ],
+    "skills": [
+      {
+        "name": "schedule-social",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/schedule-social/SKILL.md"
+      },
+      {
+        "name": "publish-blog",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/publish-blog/SKILL.md"
+      },
+      {
+        "name": "launch-ad-campaign",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/launch-ad-campaign/SKILL.md"
+      },
+      {
+        "name": "review-response",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/review-response/SKILL.md"
+      },
+      {
+        "name": "ig-reply",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-reply/SKILL.md"
+      },
+      {
+        "name": "ig-dm",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-dm/SKILL.md"
+      },
+      {
+        "name": "ig-comment",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-comment/SKILL.md"
+      },
+      {
+        "name": "comment-responder",
+        "source": "OT",
+        "path": "claude-content-skills/skills/comment-responder/SKILL.md"
+      },
+      {
+        "name": "community-engagement-plan",
+        "source": "OT",
+        "path": "claude-content-skills/skills/community-engagement-plan/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "09-results",
+    "name": "Results",
+    "tagline": "Turn results into the next advantage",
+    "group": "modules",
+    "reads": [
+      "Client",
+      "Campaign",
+      "Post",
+      "Ad",
+      "Metric"
+    ],
+    "writes": [
+      "Report",
+      "Learning"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "performance-report",
+      "social-analytics-report",
+      "continuous-improvement-loop"
+    ],
+    "skills": [
+      {
+        "name": "performance-report",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/performance-report/SKILL.md"
+      },
+      {
+        "name": "anomaly-scan",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/anomaly-scan/SKILL.md"
+      },
+      {
+        "name": "attribution-report",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/attribution-report/SKILL.md"
+      },
+      {
+        "name": "creative-health",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/creative-health/SKILL.md"
+      },
+      {
+        "name": "client-report",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/client-report/SKILL.md"
+      },
+      {
+        "name": "continuous-improvement-loop",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/continuous-improvement-loop/SKILL.md"
+      },
+      {
+        "name": "social-analytics-report",
+        "source": "OT",
+        "path": "claude-content-skills/skills/social-analytics-report/SKILL.md"
+      },
+      {
+        "name": "analytics-readout",
+        "source": "OT",
+        "path": "claude-content-skills/skills/analytics-readout/SKILL.md"
+      },
+      {
+        "name": "launch-retrospective",
+        "source": "OT",
+        "path": "claude-content-skills/skills/launch-retrospective/SKILL.md"
+      },
+      {
+        "name": "ig-audit",
+        "source": "IG",
+        "path": "instagram-agent-skill/skills/ig-audit/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "seo",
+    "name": "SEO & local",
+    "tagline": "Be found where it matters",
+    "group": "tracks",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Strategy",
+      "Metric"
+    ],
+    "writes": [
+      "Report",
+      "Task"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "seo-plan",
+      "local-seo",
+      "tech-seo-audit"
+    ],
+    "skills": [
+      {
+        "name": "seo-plan",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/seo-plan/SKILL.md"
+      },
+      {
+        "name": "tech-seo-audit",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/tech-seo-audit/SKILL.md"
+      },
+      {
+        "name": "technical-seo",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/technical-seo/SKILL.md"
+      },
+      {
+        "name": "keyword-cluster",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/keyword-cluster/SKILL.md"
+      },
+      {
+        "name": "local-seo",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/local-seo/SKILL.md"
+      },
+      {
+        "name": "local-seo-audit",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/local-seo-audit/SKILL.md"
+      },
+      {
+        "name": "backlink-gap",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/backlink-gap/SKILL.md"
+      },
+      {
+        "name": "rank-monitor",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/rank-monitor/SKILL.md"
+      },
+      {
+        "name": "seo-drift",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/seo-drift/SKILL.md"
+      },
+      {
+        "name": "content-decay-scan",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/content-decay-scan/SKILL.md"
+      },
+      {
+        "name": "programmatic-seo",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/programmatic-seo/SKILL.md"
+      },
+      {
+        "name": "reputation-management",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/reputation-management/SKILL.md"
+      },
+      {
+        "name": "local",
+        "source": "KJ",
+        "path": "marketing-skills/skills/seo/local/SKILL.md"
+      },
+      {
+        "name": "schema",
+        "source": "KJ",
+        "path": "marketing-skills/skills/seo/on-page/schema/SKILL.md"
+      },
+      {
+        "name": "landing-page",
+        "source": "KJ",
+        "path": "marketing-skills/skills/pages/marketing/landing-page/SKILL.md"
+      },
+      {
+        "name": "google-search-console",
+        "source": "KJ",
+        "path": "marketing-skills/skills/analytics/seo/google-search-console/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "geo",
+    "name": "AI search",
+    "tagline": "Show up in the answers",
+    "group": "tracks",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Strategy",
+      "Metric"
+    ],
+    "writes": [
+      "Report",
+      "Task"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "aeo-audit",
+      "entity-audit",
+      "ai-seo"
+    ],
+    "skills": [
+      {
+        "name": "aeo-audit",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/aeo-audit/SKILL.md"
+      },
+      {
+        "name": "geo-monitor",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/geo-monitor/SKILL.md"
+      },
+      {
+        "name": "entity-audit",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/entity-audit/SKILL.md"
+      },
+      {
+        "name": "gsc-ai-performance",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/gsc-ai-performance/SKILL.md"
+      },
+      {
+        "name": "ai-seo",
+        "source": "CH",
+        "path": "marketingskills/skills/ai-seo/SKILL.md"
+      },
+      {
+        "name": "geo",
+        "source": "KJ",
+        "path": "marketing-skills/skills/strategies/commercial/geo/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "ads",
+    "name": "Paid media",
+    "tagline": "Make every rupee accountable",
+    "group": "tracks",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Strategy",
+      "Campaign",
+      "Metric"
+    ],
+    "writes": [
+      "Campaign"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "paid-advertising",
+      "paid-social-brief",
+      "budget-tracker"
+    ],
+    "skills": [
+      {
+        "name": "paid-advertising",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/paid-advertising/SKILL.md"
+      },
+      {
+        "name": "retargeting-strategy",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/retargeting-strategy/SKILL.md"
+      },
+      {
+        "name": "creative-testing-framework",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/creative-testing-framework/SKILL.md"
+      },
+      {
+        "name": "ab-test-plan",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/ab-test-plan/SKILL.md"
+      },
+      {
+        "name": "budget-tracker",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/budget-tracker/SKILL.md"
+      },
+      {
+        "name": "launch-ad-campaign",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/launch-ad-campaign/SKILL.md"
+      },
+      {
+        "name": "paid-social-brief",
+        "source": "OT",
+        "path": "claude-content-skills/skills/paid-social-brief/SKILL.md"
+      },
+      {
+        "name": "meta-ads",
+        "source": "KJ",
+        "path": "marketing-skills/skills/paid-ads/platforms/meta-ads/SKILL.md"
+      },
+      {
+        "name": "google-ads",
+        "source": "KJ",
+        "path": "marketing-skills/skills/paid-ads/platforms/google-ads/SKILL.md"
+      },
+      {
+        "name": "youtube-ads",
+        "source": "KJ",
+        "path": "marketing-skills/skills/paid-ads/platforms/youtube-ads/SKILL.md"
+      },
+      {
+        "name": "paid-media-ppc-strategist",
+        "source": "AA",
+        "path": "agency-agents/paid-media/paid-media-ppc-strategist.md"
+      },
+      {
+        "name": "paid-media-paid-social-strategist",
+        "source": "AA",
+        "path": "agency-agents/paid-media/paid-media-paid-social-strategist.md"
+      },
+      {
+        "name": "paid-media-creative-strategist",
+        "source": "AA",
+        "path": "agency-agents/paid-media/paid-media-creative-strategist.md"
+      },
+      {
+        "name": "paid-media-tracking-specialist",
+        "source": "AA",
+        "path": "agency-agents/paid-media/paid-media-tracking-specialist.md"
+      },
+      {
+        "name": "paid-media-auditor",
+        "source": "AA",
+        "path": "agency-agents/paid-media/paid-media-auditor.md"
+      }
+    ]
+  },
+  {
+    "key": "influencers",
+    "name": "Influencers",
+    "tagline": "The right voices for your brand",
+    "group": "tracks",
+    "reads": [
+      "Client",
+      "BrandKit",
+      "Strategy",
+      "Campaign"
+    ],
+    "writes": [
+      "Asset"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "influencer-partnerships",
+      "ugc-creator-brief",
+      "influencer-brief"
+    ],
+    "skills": [
+      {
+        "name": "influencer-partnerships",
+        "source": "OT",
+        "path": "claude-content-skills/skills/influencer-partnerships/SKILL.md"
+      },
+      {
+        "name": "creator-outreach",
+        "source": "OT",
+        "path": "claude-content-skills/skills/creator-outreach/SKILL.md"
+      },
+      {
+        "name": "ugc-creator-brief",
+        "source": "OT",
+        "path": "claude-content-skills/skills/ugc-creator-brief/SKILL.md"
+      },
+      {
+        "name": "influencer-brief",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/influencer-brief/SKILL.md"
+      }
+    ]
+  },
+  {
+    "key": "managing",
+    "name": "Team & clients",
+    "tagline": "Keep the work moving",
+    "group": "tracks",
+    "reads": [
+      "Client",
+      "Campaign",
+      "Task"
+    ],
+    "writes": [
+      "Task",
+      "Report"
+    ],
+    "approval_required": false,
+    "defaults": [
+      "team-assign",
+      "status",
+      "exec-summary"
+    ],
+    "skills": [
+      {
+        "name": "team-assign",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/team-assign/SKILL.md"
+      },
+      {
+        "name": "status",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/status/SKILL.md"
+      },
+      {
+        "name": "exec-summary",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/exec-summary/SKILL.md"
+      },
+      {
+        "name": "client-proposal",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/client-proposal/SKILL.md"
+      },
+      {
+        "name": "sop-library",
+        "source": "DMP",
+        "path": "digital-marketing-pro/skills/sop-library/SKILL.md"
+      }
+    ]
+  }
+]

@@ -1,0 +1,3 @@
+reads: [Client,BrandKit,Strategy,Learning]
+writes: [Campaign]
+approval_required: false

@@ -1,0 +1,33 @@
+{
+ "coverage":{"from":"2026-11-01","to":"2027-10-31","regions":["Karnataka","Maharashtra","Tamil Nadu","Delhi NCR"]},
+ "review_note":"Lunar festival dates for 2027 are planning estimates until verified against applicable state notifications. Season windows are editorial planning assumptions, not official schedules.",
+ "events":[
+  {"date":"2026-11-01","name":"Kannada Rajyotsava","regions":["Karnataka"],"status":"fixed_date"},
+  {"date":"2026-11-08","name":"Diwali / Deepavali","regions":["All"],"status":"verified","source":"https://www.indiapost.gov.in/holidays-list"},
+  {"date":"2026-11-14","name":"Children’s Day","regions":["All"],"status":"fixed_date"},
+  {"date":"2026-11-24","name":"Guru Nanak Jayanti","regions":["Delhi NCR","Maharashtra"],"status":"verified","source":"https://www.indiapost.gov.in/holidays-list"},
+  {"date":"2026-12-25","name":"Christmas","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-01-01","name":"New Year","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-01-15","name":"Pongal / Sankranti","regions":["Tamil Nadu","Karnataka","Maharashtra"],"status":"provisional","source":"https://www.timeanddate.com/holidays/india/2027"},
+  {"date":"2027-01-26","name":"Republic Day","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-03-08","name":"International Women’s Day","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-03-22","name":"Holi","regions":["Delhi NCR","Maharashtra","Karnataka"],"status":"provisional","source":"https://www.timeanddate.com/holidays/india/2027"},
+  {"date":"2027-04-14","name":"Tamil New Year / Ambedkar Jayanti","regions":["Tamil Nadu","Maharashtra","Karnataka","Delhi NCR"],"status":"fixed_date"},
+  {"date":"2027-05-01","name":"Maharashtra Day / Labour Day","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-06-05","name":"World Environment Day","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-06-21","name":"International Day of Yoga","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-08-15","name":"Independence Day","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-09-05","name":"Teachers’ Day","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-10-02","name":"Gandhi Jayanti","regions":["All"],"status":"fixed_date"},
+  {"date":"2027-10-29","name":"Diwali / Deepavali","regions":["All"],"status":"provisional","source":"https://www.timeanddate.com/holidays/india/2027"}
+ ],
+ "seasons":[
+  {"name":"Year-end sales","months":["2026-11","2026-12"],"regions":["All"],"status":"planning_window"},
+  {"name":"Wedding season content","months":["2026-11","2026-12","2027-01","2027-02"],"regions":["All"],"status":"planning_window"},
+  {"name":"School admissions planning","months":["2027-01","2027-02","2027-03","2027-04","2027-05"],"regions":["All"],"status":"planning_window"},
+  {"name":"Cricket / IPL planning — schedule unconfirmed","months":["2027-03","2027-04","2027-05"],"regions":["All"],"status":"planning_window"},
+  {"name":"Summer & back-to-school","months":["2027-04","2027-05","2027-06"],"regions":["All"],"status":"planning_window"},
+  {"name":"Monsoon content","months":["2027-06","2027-07","2027-08"],"regions":["All"],"status":"planning_window"},
+  {"name":"Festive campaign preparation","months":["2027-08","2027-09","2027-10"],"regions":["All"],"status":"planning_window"}
+ ]
+}

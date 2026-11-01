@@ -1,0 +1,3 @@
+tools: []
+# External connectors are deferred. No network, shell or SQL tool is exposed to the model.
+services: [approval-queue]

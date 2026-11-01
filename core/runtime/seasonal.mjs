@@ -1,0 +1,2 @@
+import fs from 'node:fs';import path from 'node:path';import {ROOT} from '../db/index.mjs';
+export function seasonal(region,month){const file=path.join(ROOT,'exora/festivals/2026-2027.json');const data=JSON.parse(fs.readFileSync(file,'utf8'));return {...data,events:data.events.filter(e=>(!month||e.date.startsWith(month))&&(e.regions.includes('All')||e.regions.includes(region))),seasons:data.seasons.filter(e=>(!month||e.months.includes(month))&&(e.regions.includes('All')||e.regions.includes(region)))};}

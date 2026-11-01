@@ -1,0 +1,10 @@
+node_modules/
+.next/
+.local/
+.env*
+!.env.example
+vendor/*/.git/
+*.tsbuildinfo
+
+# upstream repos are pinned in docs/vendor-inventory.json; not tracked here
+vendor/

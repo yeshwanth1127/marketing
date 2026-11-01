@@ -1,0 +1,3 @@
+reads: [Client,Asset,Approval]
+writes: [Post,Ad]
+approval_required: true

@@ -1,0 +1,3 @@
+reads: [Client,Asset,Strategy,Post,Ad]
+writes: [Approval]
+approval_required: true

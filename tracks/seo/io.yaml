@@ -1,0 +1,3 @@
+reads: [Client,BrandKit,Strategy,Metric]
+writes: [Report,Task]
+approval_required: false

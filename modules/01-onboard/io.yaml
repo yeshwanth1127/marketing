@@ -1,0 +1,3 @@
+reads: [Client,BrandKit]
+writes: [BrandKit]
+approval_required: false
