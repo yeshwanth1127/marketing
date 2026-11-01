@@ -14,7 +14,8 @@
     "local": "bash scripts/local.sh",
     "agent:smoke": "node --env-file-if-exists=.env.local scripts/agent-smoke.mjs",
     "setup:python": "bash scripts/setup-python.sh",
-    "vendor:sync": "bash scripts/vendor-sync.sh"
+    "vendor:sync": "bash scripts/vendor-sync.sh",
+    "design:smoke": "node --env-file-if-exists=.env.local scripts/design-smoke.mjs"
   },
   "dependencies": {
     "@ffprobe-installer/ffprobe": "^2.1.2",

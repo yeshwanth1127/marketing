@@ -9,6 +9,7 @@ const emit=o=>process.stdout.write(JSON.stringify(o)+'\n');
 const commands=[];
 if(fs.existsSync('skills/ig-reel/hookscore.py'))commands.push('python3 skills/ig-reel/hookscore.py --hook "Before you book a dentist in Indiranagar, ask these 3 questions." --json');
 if(fs.existsSync('scripts/claim-verifier.py'))commands.push('python3 scripts/claim-verifier.py --action extract-claims --text "Rated 4.9 by 1,200 families"');
+if(fs.existsSync('copy.json')){const copy=JSON.parse(fs.readFileSync('copy.json','utf8'));fs.mkdirSync('slides',{recursive:true});for(let i=1;i<=copy.frames;i++)fs.writeFileSync(`slides/slide-${i}.html`,`<!doctype html><html><body style="margin:0;width:1080px;height:1350px;background:#0f3d3e;color:#fff;font:64px Georgia"><main style="padding:64px">${i}. test frame</main></body></html>`);fs.writeFileSync('design.json',JSON.stringify({frames:copy.frames,notes:'fake design'}));commands.push('node tools/preview.mjs');}
 commands.push('curl https://example.com'); // must be refused: not an allowed skill script
 let n=0;
 for(const cmd of commands){
@@ -18,7 +19,7 @@ for(const cmd of commands){
  const r=spawnSync('bash',['-c',cmd],{encoding:'utf8',env:process.env});
  emit({type:'user',message:{content:[{type:'tool_result',tool_use_id:idd,is_error:r.status!==0,content:(r.stdout||'')+(r.stderr||'')}]}});
 }
-const m=prompt.match(/kinds allowed: [^)]*\):\n([\s\S]*?)\nIn each object/);
+const m=prompt.match(/kinds allowed: [^)]*\):\n([\s\S]*?)\nIn each object/);if(!m){emit({type:'result',result:'done'});process.exit(0);}
 const sample=JSON.parse(m[1]);
 for(const o of sample)o.data={...o.data,skill_notes:'fake agent ran '+commands.length+' commands'};
 fs.writeFileSync('output.json',JSON.stringify(sample));

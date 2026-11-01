@@ -428,12 +428,18 @@
     ],
     "approval_required": false,
     "defaults": [
+      "exora-design-system",
       "motion-doctrine",
       "ad-creative",
       "hyperframes",
       "captions-overlay"
     ],
     "skills": [
+      {
+        "name": "exora-design-system",
+        "source": "EXORA",
+        "path": null
+      },
       {
         "name": "viral-carousel",
         "source": "OT",

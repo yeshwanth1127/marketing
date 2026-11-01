@@ -119,3 +119,16 @@ test('Claude agent mode: skill scripts run inside the sandbox are receipted; oth
   assert.ok(crow.some(r=>r.script==='claim-verifier.py'&&r.exit_code===0&&r.vendor_match),JSON.stringify(crow));
  }finally{delete process.env.EXORA_CLAUDE_BIN;}
 });
+
+test('Claude design composition: slides are collected and the preview tool run is receipted',async()=>{
+ process.env.EXORA_CLAUDE_BIN=path.join(ROOT,'tests/fake-claude.mjs');
+ try{
+  const {composeStatic}=await import('../core/design/compose.mjs');
+  const c=(await q('SELECT * FROM clients WHERE id=$1',[client])).rows[0];const user=(await q("SELECT * FROM users WHERE role='admin' LIMIT 1")).rows[0];
+  const asset={id:'00000000-0000-0000-0000-000000000001',title:'Hook',data:{type:'carousel',format:'portrait',on_screen_text:['a','b','c','d']}};
+  const res=await composeStatic({client:c,user,run:null,records:[],asset,brand:{colors:['#0f3d3e','#f2c14e'],banned_words:[]}});
+  assert.equal(res.html.length,4);assert.equal(res.design.notes,'fake design');
+  const rows=(await q('SELECT skill,script,source FROM tool_runs WHERE id=ANY($1::uuid[])',[res.receipts])).rows;
+  assert.ok(rows.some(r=>r.script==='preview.mjs'&&r.skill==='exora-design-system'&&r.source==='EXORA'),JSON.stringify(rows));
+ }finally{delete process.env.EXORA_CLAUDE_BIN;}
+});

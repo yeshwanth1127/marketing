@@ -12,7 +12,7 @@ const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const DMP_SCRIPTS=path.join(ROOT,'core/tools/vendor-scripts/digital-marketing-pro/scripts');
 const SCRIPT_EXT=/\.(py|mjs)$/;
 
-export function buildBox(mod,skills,ctx){
+export function buildBox(mod,skills,ctx,opts={}){
  const box=fs.mkdtempSync(path.join(os.tmpdir(),'exora-agent-'));
  const allowed=[];const scriptOwner={};
  fs.mkdirSync(path.join(box,'skills'));
@@ -37,7 +37,10 @@ export function buildBox(mod,skills,ctx){
   dmp=prepareDmp(box,path.join(box,'scripts'),python(),env,ctx);
   env.CLAUDE_MARKETING_HOME=dmp.home;env.CLAUDE_PLUGIN_ROOT=box;
  }
- fs.writeFileSync(path.join(box,'workspace.json'),JSON.stringify(ctx.workspace,null,1));
+ fs.writeFileSync(path.join(box,'workspace.json'),JSON.stringify(ctx.workspace||{},null,1));
+ for(const [rel,content] of Object.entries(opts.files||{})){const dest=path.join(box,rel);fs.mkdirSync(path.dirname(dest),{recursive:true});if(content&&typeof content==='object'&&content.copy)fs.cpSync(content.copy,dest,{recursive:true});else fs.writeFileSync(dest,content);}
+ for(const a of opts.allowed||[])allowed.push(a);
+ for(const [rel,o] of Object.entries(opts.owners||{}))scriptOwner[rel]=o;
  return {box,allowed,scriptOwner,env,dmp};
 }
 
@@ -63,11 +66,11 @@ export function receiptsFromStream(stdout){
  return runs;
 }
 
-export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=40}={}){
- const {box,allowed,scriptOwner,env,dmp}=buildBox(mod,skills,ctx);
+export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=40,files,allowed:extraAllowed,prompt:customPrompt,collect,requireOutput=true,owners}={}){
+ const {box,allowed,scriptOwner,env,dmp}=buildBox(mod,skills,ctx,{files,allowed:extraAllowed,owners});
  const started=Date.now();
  try{
-  const prompt=agentPrompt({mod,skills,dmp,sample});
+  const prompt=customPrompt?customPrompt({skills,dmp,box}):agentPrompt({mod,skills,dmp,sample});
   const args=['-p',prompt,'--output-format','stream-json','--verbose','--max-turns',String(maxTurns),
    '--tools','Read,Write,Edit,Glob,Grep,Bash',
    '--allowedTools',['Read','Write','Edit','Glob','Grep',...allowed].join(','),
@@ -85,7 +88,7 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
   // Receipts: every Bash call that targeted an allowed skill script.
   const receipts=[];
   for(const r of receiptsFromStream(stdout)){
-   const m=r.command.match(/^\s*(?:python3|node)\s+((?:skills\/[\w.-]+|scripts)\/[\w./-]+\.(?:py|mjs))/);
+   const m=r.command.match(/^\s*(?:python3|node)\s+((?:skills\/[\w.-]+|scripts|tools)\/[\w./-]+\.(?:py|mjs))/);
    const owner=m&&scriptOwner[m[1]];if(!owner)continue;
    const buf=fs.readFileSync(owner.abs);let vendorMatch=false;
    const vendorPath=owner.shared?path.join(ROOT,'vendor/digital-marketing-pro/scripts',owner.file):null;
@@ -97,9 +100,11 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
     [rid,ctx.client.id,ctx.run,mod.key,owner.skill,owner.source,owner.file,sha(md),sha(buf),vendorMatch,sha(r.command),sha(r.output),r.ok?0:1,null,r.ok?null:r.output.slice(-500),ctx.user?.id||null]);
   }
   if(code!==0)throw new Error(`Claude exited with code ${code}. ${String(stderr).slice(-600)}`);
+  const collected=collect?await collect(box):null;
   const outFile=path.join(box,'output.json');
-  if(!fs.existsSync(outFile))throw new Error('Claude finished without writing output.json');
-  const outputs=JSON.parse(fs.readFileSync(outFile,'utf8'));
-  return {outputs,receipts,duration_ms:Date.now()-started};
+  let outputs=null;
+  if(fs.existsSync(outFile))outputs=JSON.parse(fs.readFileSync(outFile,'utf8'));
+  else if(requireOutput)throw new Error('Claude finished without writing output.json');
+  return {outputs,collected,receipts,duration_ms:Date.now()-started};
  }finally{fs.rmSync(box,{recursive:true,force:true});}
 }
