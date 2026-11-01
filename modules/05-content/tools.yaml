@@ -1,3 +1,26 @@
+# Model tools: none (no network, shell or SQL for Claude). Skill scripts below run in a sandbox via core/tools/runner.mjs.
 tools: []
-# External connectors are deferred. No network, shell or SQL tool is exposed to the model.
 services: [record-store]
+scripts:
+  - id: caption-lint
+    skill: ig-caption
+    file: caption.py
+    mode: direct
+    args: ["-", "--json"]
+    input: caption text on stdin
+    output: json
+  - id: ai-tell
+    skill: ig-human
+    file: detect.py
+    mode: direct
+    args: ["-", "--json"]
+    input: script + caption on stdin
+    output: json
+  - id: beat-sheet
+    skill: ig-reel
+    module: 04-hooks     # owned by Step 4; used read-only here
+    file: beats.py
+    mode: direct
+    args: ["-", "--json"]
+    input: reel script on stdin
+    output: json

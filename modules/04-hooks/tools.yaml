@@ -1,3 +1,12 @@
+# Model tools: none (no network, shell or SQL for Claude). Skill scripts below run in a sandbox via core/tools/runner.mjs.
 tools: []
-# External connectors are deferred. No network, shell or SQL tool is exposed to the model.
 services: [record-store]
+scripts:
+  - id: hookscore
+    skill: ig-reel
+    file: hookscore.py
+    mode: direct          # our code supplies the hooks; output stored as-is
+    args: ["-", "--json"]
+    input: one hook per line on stdin
+    output: json
+    timeout_ms: 20000
