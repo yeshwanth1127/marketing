@@ -7,6 +7,10 @@ import {authorize} from '../auth/index.mjs';
 import {dmpHome} from '../tools/dmp.mjs';
 
 const LOCAL=path.join(ROOT,'.local');
+// The purge permission lives in migration 003. Apply it here too (idempotent), so delete works even if
+// the app was updated without a restart and the migration hasn't run yet.
+let schemaReady=null;
+const ensureSchema=()=>schemaReady||=q(fs.readFileSync(path.join(ROOT,'core/db/003-client-delete.sql'),'utf8')).catch(e=>{schemaReady=null;throw e;});
 // only ever remove paths inside .local/, never the folder itself
 function removeInside(p){const abs=path.resolve(ROOT,p);if(!abs.startsWith(LOCAL+path.sep))return false;if(!fs.existsSync(abs))return false;fs.rmSync(abs,{recursive:true,force:true});return true;}
 
@@ -25,6 +29,7 @@ export async function clientFootprint(clientId){
 export async function deleteClient(user,client,confirmName){
   authorize(user,['admin']);
   if(typeof confirmName!=='string'||confirmName.trim()!==client.name.trim())fail('Type the client’s name exactly to confirm');
+  await ensureSchema();
   const before=await clientFootprint(client.id);
   if(before.running_jobs)fail('Background work is running for this client. Wait for it to finish, then delete.',409);
   const disk=await tx(async c=>{
