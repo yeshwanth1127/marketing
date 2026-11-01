@@ -55,11 +55,36 @@ async function lintCopy(ctx,mod,out){
  return receipts;
 }
 
+// Step 9: run DMP's budget optimiser and creative-fatigue predictor on recorded (real-labelled) metrics.
+async function analyseResults(ctx,mod,out){
+ const receipts=[];const metrics=(ctx.records||[]).filter(r=>r.kind==='Metric'&&r.data.label==='real');
+ const byChannel={};
+ for(const m of metrics){const ch=m.data.channel||m.data.source;if(!ch)continue;const c=byChannel[ch]||={name:ch,spend:0,conversions:0,revenue:0};const k=m.data.metric;if(k==='spend')c.spend+=m.data.value;if(k==='conversions'||k==='leads')c.conversions+=m.data.value;if(k==='revenue')c.revenue+=m.data.value;}
+ const channels=Object.values(byChannel).filter(c=>c.spend>0);
+ if(channels.length>=2&&has(mod,'budget-reallocation')){
+  const total=channels.reduce((a,c)=>a+c.spend,0);
+  const r=await runScript(ctx,mod,'budget-reallocation',{args:['--channels',JSON.stringify(channels),'--total-budget',String(total)]});receipts.push(r.receipt);
+  out.data.budget_reallocation=r.ok?r.output:{error:r.error};
+ }
+ const byCreative={};
+ for(const m of metrics){const cr=m.data.asset_id||m.data.creative;if(!cr)continue;const d=(byCreative[cr]||={})[m.data.date]||={date:m.data.date,clicks:0,impressions:0};if(m.data.metric==='clicks')d.clicks+=m.data.value;if(m.data.metric==='impressions')d.impressions+=m.data.value;}
+ const fatigue=[];
+ for(const [cr,days] of Object.entries(byCreative)){
+  const hist=Object.values(days).filter(d=>d.impressions>0).sort((a,b)=>a.date.localeCompare(b.date)).map(d=>({date:d.date,impressions:d.impressions,ctr:+(d.clicks/d.impressions*100).toFixed(3)}));
+  if(hist.length<4||!has(mod,'creative-fatigue'))continue;
+  const r=await runScript(ctx,mod,'creative-fatigue',{args:['--action','predict-fatigue','--creative-id',String(cr),'--performance-history',JSON.stringify(hist)]});receipts.push(r.receipt);
+  fatigue.push(r.ok?r.output:{creative_id:cr,error:r.error});
+ }
+ if(fatigue.length)out.data.creative_fatigue=fatigue;
+ return receipts;
+}
+
 export async function enrich(ctx,mod,outputs){
  for(const out of outputs){
   let receipts=[];
   if(out.kind==='Idea'&&has(mod,'hookscore'))receipts=await scoreHooks(ctx,mod,out);
   else if(out.kind==='Asset'&&(out.data.type||'copy')==='copy')receipts=await lintCopy(ctx,mod,out);
+  else if(out.kind==='Report'&&mod.key==='09-results')receipts=await analyseResults(ctx,mod,out);
   if(receipts.length)out.data.receipts=[...(out.data.receipts||[]),...receipts];
  }
  return outputs;

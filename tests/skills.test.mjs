@@ -74,3 +74,34 @@ test('Receipts and skill-coverage endpoints expose what really ran',async()=>{
  const c=await request(`skill-coverage?client=${client}`);assert.equal(c.status,200);
  assert.ok(c.data.declared.length>=6);assert.ok(c.data.runs.some(x=>x.script==='eval-runner.py'&&x.ok>0));
 });
+
+test('Calculators run DMP scripts with validated inputs and match direct runs (golden)',async()=>{
+ const p={baseline_rate:0.03,mde:0.2,mde_type:'relative',daily_traffic:800};
+ const r=await action({action:'run-tool',module:'ads',tool:'sample-size',params:p,save:true});assert.equal(r.status,200,JSON.stringify(r.data));
+ const exp=vendor('digital-marketing-pro/scripts/sample-size-calculator.py','',['--baseline-rate','0.03','--mde','0.2','--mde-type','relative','--daily-traffic','800']);
+ assert.equal(r.data.output.sample_size_per_variant,exp.sample_size_per_variant);assert.equal(r.data.output.estimated_days,exp.estimated_days);
+ assert.equal(r.data.record.kind,'Report');assert.deepEqual(r.data.record.data.receipts,[r.data.receipt]);
+ const s=await action({action:'run-tool',module:'ads',tool:'significance',params:{control_visitors:4000,control_conversions:120,variant_visitors:4000,variant_conversions:156}});
+ assert.equal(s.data.output.z_test.significant,true);
+ const b=await action({action:'run-tool',module:'03-plan',tool:'budget-optimizer',params:{channels:[{name:'Meta',spend:20000,conversions:40,revenue:120000},{name:'Google',spend:10000,conversions:30,revenue:90000}],total_budget:30000}});
+ assert.equal(b.status,200,JSON.stringify(b.data));assert.ok(b.data.output.optimized_allocation.channels.length===2);
+});
+
+test('Calculator inputs are validated before any script runs',async()=>{
+ assert.equal((await action({action:'run-tool',module:'ads',tool:'nope',params:{}})).status,400);
+ assert.equal((await action({action:'run-tool',module:'ads',tool:'sample-size',params:{mde:0.2}})).status,400);
+ assert.equal((await action({action:'run-tool',module:'ads',tool:'sample-size',params:{baseline_rate:'abc',mde:0.2}})).status,400);
+});
+
+test('Step 9 report runs budget reallocation and creative fatigue on real metrics',async()=>{
+ const rows=[];const days=['2026-10-01','2026-10-02','2026-10-03','2026-10-04','2026-10-05'];
+ days.forEach((d,i)=>{rows.push({metric:'impressions',value:5000,label:'real',date:d,source:'Meta export',channel:'Meta',asset_id:'reel-1'},{metric:'clicks',value:110-i*15,label:'real',date:d,source:'Meta export',channel:'Meta',asset_id:'reel-1'});});
+ rows.push({metric:'spend',value:20000,label:'real',date:'2026-10-05',source:'Meta export',channel:'Meta'},{metric:'conversions',value:40,label:'real',date:'2026-10-05',source:'Meta export',channel:'Meta'},{metric:'revenue',value:120000,label:'real',date:'2026-10-05',source:'Meta export',channel:'Meta'});
+ rows.push({metric:'spend',value:10000,label:'real',date:'2026-10-05',source:'Google export',channel:'Google'},{metric:'conversions',value:30,label:'real',date:'2026-10-05',source:'Google export',channel:'Google'},{metric:'revenue',value:90000,label:'real',date:'2026-10-05',source:'Google export',channel:'Google'});
+ assert.equal((await action({action:'import-metrics',metrics:rows})).status,200);
+ const g=await action({action:'generate',module:'09-results',provider:'local_template'});assert.equal(g.status,200,JSON.stringify(g.data));
+ const rep=g.data.records[0];
+ assert.ok(rep.data.budget_reallocation&&!rep.data.budget_reallocation.error,JSON.stringify(rep.data.budget_reallocation));
+ assert.equal(rep.data.creative_fatigue[0].creative_id,'reel-1');
+ assert.ok(rep.data.receipts.length>=2);
+});

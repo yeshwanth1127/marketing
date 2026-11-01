@@ -1,3 +1,17 @@
 tools: []
 # External connectors are deferred. No network, shell or SQL tool is exposed to the model.
 services: [record-store]
+scripts:
+  - id: budget-reallocation
+    skill: budget-optimizer
+    module: 03-plan
+    scripts: dmp
+    file: budget-optimizer.py
+    mode: direct
+    output: json
+  - id: creative-fatigue
+    skill: creative-health
+    scripts: dmp
+    file: creative-fatigue-predictor.py
+    mode: direct
+    output: json

@@ -1,3 +1,30 @@
 tools: []
 # External connectors are deferred. No network, shell or SQL tool is exposed to the model.
 services: [record-store]
+scripts:
+  - id: sample-size
+    skill: ab-test-plan
+    scripts: dmp
+    file: sample-size-calculator.py
+    mode: direct
+    output: json
+    label: A/B test sample size (DMP sample-size-calculator.py)
+    params:
+      - {name: baseline_rate, flag: --baseline-rate, type: number, min: 0.0001, max: 1, required: true, label: Current conversion rate (0.03 = 3%)}
+      - {name: mde, flag: --mde, type: number, min: 0.0001, max: 5, required: true, label: Smallest lift worth detecting (0.2 = 20% relative)}
+      - {name: mde_type, flag: --mde-type, type: choice, choices: [relative, absolute], label: Lift type}
+      - {name: daily_traffic, flag: --daily-traffic, type: number, min: 1, label: Daily visitors or clicks}
+      - {name: variants, flag: --variants, type: number, min: 2, max: 10, label: Number of variants}
+  - id: significance
+    skill: creative-testing-framework
+    scripts: dmp
+    file: significance-tester.py
+    mode: direct
+    output: json
+    label: Did the test win? (DMP significance-tester.py)
+    params:
+      - {name: control_visitors, flag: --control-visitors, type: number, min: 1, required: true, label: Control visitors}
+      - {name: control_conversions, flag: --control-conversions, type: number, min: 0, required: true, label: Control conversions}
+      - {name: variant_visitors, flag: --variant-visitors, type: number, min: 1, required: true, label: Variant visitors}
+      - {name: variant_conversions, flag: --variant-conversions, type: number, min: 0, required: true, label: Variant conversions}
+      - {name: confidence, flag: --confidence, type: number, min: 0.8, max: 0.999, label: Confidence level (0.95)}

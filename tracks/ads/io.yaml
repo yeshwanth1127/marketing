@@ -1,3 +1,3 @@
 reads: [Client,BrandKit,Strategy,Campaign,Metric]
-writes: [Campaign]
+writes: [Campaign,Report]
 approval_required: false

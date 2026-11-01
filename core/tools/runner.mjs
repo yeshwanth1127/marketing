@@ -21,7 +21,7 @@ export function python(){
 }
 export function scriptSpec(mod,scriptId){
  const spec=(mod.tools?.scripts||[]).find(s=>s.id===scriptId);
- if(!spec)throw new Error(`Script ${scriptId} is not declared in ${mod.key}/tools.yaml`);
+ if(!spec){const e=new Error(`Tool ${scriptId} is not declared for ${mod.key}`);e.status=400;throw e;}
  return spec;
 }
 // Network is not available to skill scripts: proxies point at a closed local port.

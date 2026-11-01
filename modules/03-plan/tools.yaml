@@ -1,3 +1,16 @@
 tools: []
 # External connectors are deferred. No network, shell or SQL tool is exposed to the model.
 services: [record-store]
+scripts:
+  - id: budget-optimizer
+    skill: budget-optimizer
+    scripts: dmp
+    file: budget-optimizer.py
+    mode: direct
+    output: json
+    label: Budget reallocation (DMP budget-optimizer.py)
+    params:
+      - {name: channels, flag: --channels, type: json, required: true, label: 'Channels: [{"name":"Meta","spend":20000,"conversions":40,"revenue":120000}]'}
+      - {name: total_budget, flag: --total-budget, type: number, min: 1, required: true, label: Total budget (INR)}
+      - {name: min_spend, flag: --min-spend, type: number, min: 0, label: Minimum spend per channel (INR)}
+      - {name: test_budget_pct, flag: --test-budget-pct, type: number, min: 0, max: 50, label: Budget kept for testing (%)}
