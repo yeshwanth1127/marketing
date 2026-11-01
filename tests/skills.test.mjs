@@ -68,3 +68,9 @@ test('Unproven claims are flagged by claim-verifier; recorded evidence verifies 
  assert.deepEqual(r.data.data.claim_check.summary,exp.summary);
  assert.equal(r.data.data.claim_check.score,exp.verification_score);
 });
+
+test('Receipts and skill-coverage endpoints expose what really ran',async()=>{
+ const r=await request(`receipts?client=${client}&ids=${idea.data.receipts.join(',')}`);assert.equal(r.status,200);assert.equal(r.data[0].script,'hookscore.py');
+ const c=await request(`skill-coverage?client=${client}`);assert.equal(c.status,200);
+ assert.ok(c.data.declared.length>=6);assert.ok(c.data.runs.some(x=>x.script==='eval-runner.py'&&x.ok>0));
+});
