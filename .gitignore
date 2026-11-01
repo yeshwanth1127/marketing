@@ -8,3 +8,5 @@ vendor/*/.git/
 
 # upstream repos are pinned in docs/vendor-inventory.json; not tracked here
 vendor/
+__pycache__/
+*.pyc
