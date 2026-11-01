@@ -1,3 +1,54 @@
 tools: []
 # External connectors are deferred. No network, shell or SQL tool is exposed to the model.
 services: [record-store]
+scripts:
+  - id: language-detect
+    skill: language-config
+    scripts: dmp
+    file: language-router.py
+    mode: direct
+    args: ["--action", "detect"]
+    output: json
+    label: Detect the language of a text (DMP language-router.py)
+    params:
+      - {name: text, flag: --file, type: text, to: file, required: true, label: Text to check}
+    example: {text: "Namaskara! Nimma maguvige olle shaale."}
+  - id: languages-supported
+    skill: language-config
+    scripts: dmp
+    file: language-router.py
+    mode: direct
+    args: ["--action", "supported-languages"]
+    output: json
+    label: Languages DMP can route and score (DMP language-router.py)
+    params: []
+    example: {}
+  - id: brand-guidelines
+    skill: import-guidelines
+    scripts: dmp
+    file: guidelines-manager.py
+    mode: direct
+    state: persistent
+    args: ["--brand", "{brand}"]
+    output: json
+    label: Brand guidelines, templates and SOPs (DMP guidelines-manager.py)
+    help: Saved guidelines persist for this client and are read by DMP's checks.
+    params:
+      - {name: action, flag: --action, type: choice, required: true, choices: [summary, list-categories, get, save, delete, list-templates, get-template, save-template, list-sops, get-sop, save-sop], label: Action}
+      - {name: category, flag: --category, type: string, label: "Category (e.g. voice, visual, legal)"}
+      - {name: name, flag: --name, type: string, label: Template or SOP name}
+      - {name: description, flag: --description, type: string, label: Description}
+      - {name: content, flag: --file, type: text, to: file, label: Content to save (markdown)}
+    example: {action: summary}
+  - id: dmp-status
+    skill: brand-setup
+    scripts: dmp
+    file: dm-status.py
+    mode: direct
+    state: persistent
+    args: ["--brand", "{brand}", "--json"]
+    output: json
+    label: DMP brand workspace status (DMP dm-status.py)
+    params:
+      - {name: section, flag: --section, type: choice, choices: [brand, engagements, insights, compliance, deps, all], label: Section}
+    example: {section: brand}

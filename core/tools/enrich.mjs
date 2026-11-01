@@ -47,6 +47,25 @@ async function lintCopy(ctx,mod,out){
     else if(c.status==='unverified'||c.status==='evidence_unverified')extra.push({severity:'warning',message:`Claim needs evidence before approval: "${c.text}"`,source:'verify-claims/claim-verifier.py'});}
   }else out.data.claim_check={error:r.error};
  }
+ // DMP scorers on the full copy: brand voice, content quality, AI-tell scan. Scores only; never rewrite copy.
+ if(body&&has(mod,'brand-voice')){
+  const r=await runScript(ctx,mod,'brand-voice',{stdin:body,args:['--file','{input_file}']});receipts.push(r.receipt);
+  out.data.brand_voice=r.ok?{overall_score:r.output.overall_score??null,dimensions:r.output.dimensions||r.output.scores||null,recommendation:r.output.recommendation||null,fallback:!!r.output.fallback}:{error:r.error};
+  if(r.ok&&typeof r.output.overall_score==='number'&&r.output.overall_score<60)extra.push({severity:'warning',message:`Off brand voice (DMP brand-voice-scorer.py ${r.output.overall_score}/100).`,source:'check/brand-voice-scorer.py'});
+ }
+ if(body&&has(mod,'content-score')){
+  const r=await runScript(ctx,mod,'content-score',{stdin:body,args:['--file','{input_file}','--type',out.data.channel==='email'?'email':out.data.channel==='ad'?'ad':'social']});receipts.push(r.receipt);
+  out.data.content_score=r.ok?{overall_score:r.output.overall_score??null,grade:r.output.grade||null,dimensions:r.output.dimensions||null,recommendations:(r.output.recommendations||[]).slice(0,6),fallback:!!r.output.fallback}:{error:r.error};
+ }
+ if(body&&has(mod,'ai-tell-scan')){
+  const r=await runScript(ctx,mod,'ai-tell-scan',{stdin:body,args:['--file','{input_file}']});receipts.push(r.receipt);
+  out.data.ai_tell_scan=r.ok?{humanize_passed:r.output.humanize_passed,advisory_rating:r.output.advisory_rating,flagged_paragraph_pct:r.output.flagged_paragraph_pct,flagged_sentences:(r.output.flagged_sentences||[]).slice(0,8)}:{error:r.error};
+  if(r.ok&&r.output.humanize_passed===false)extra.push({severity:'warning',message:`AI-tell scan: ${r.output.flagged_paragraph_pct}% of paragraphs flagged (${r.output.advisory_rating||'review'}). Run "Strip AI phrasing" or rewrite.`,source:'check/ai-tell-scan.py'});
+ }
+ // Keep this client's quality history (persistent DMP state) so trends and regressions are real.
+ if(out.data.quality_gate&&typeof out.data.quality_gate.composite_score==='number'&&has(mod,'quality-log')){
+  const r=await runScript(ctx,mod,'quality-log',{args:['--data',JSON.stringify({content_type:out.data.channel||'social',title:String(out.title||out.data.title||'Copy').slice(0,120),scores:{composite:out.data.quality_gate.composite_score},grade:out.data.quality_gate.grade||''})]});receipts.push(r.receipt);
+ }
  if(script&&has(mod,'beat-sheet')){
   const r=await runScript(ctx,mod,'beat-sheet',{stdin:script});receipts.push(r.receipt);
   out.data.beat_sheet=r.ok?r.output:{error:r.error};

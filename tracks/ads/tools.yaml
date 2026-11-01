@@ -28,3 +28,18 @@ scripts:
       - {name: variant_visitors, flag: --variant-visitors, type: number, min: 1, required: true, label: Variant visitors}
       - {name: variant_conversions, flag: --variant-conversions, type: number, min: 0, required: true, label: Variant conversions}
       - {name: confidence, flag: --confidence, type: number, min: 0.8, max: 0.999, label: Confidence level (0.95)}
+  - id: budget-pacing
+    skill: budget-tracker
+    scripts: dmp
+    file: ad-budget-pacer.py
+    mode: direct
+    output: json
+    label: Ad spend pacing (DMP ad-budget-pacer.py)
+    params:
+      - {name: budget, flag: --budget, type: number, min: 1, required: true, label: Budget for the period (INR)}
+      - {name: period_days, flag: --period-days, type: number, min: 1, max: 366, required: true, label: Days in period}
+      - {name: days_elapsed, flag: --days-elapsed, type: number, min: 0, max: 366, required: true, label: Days elapsed}
+      - {name: spend_to_date, flag: --spend-to-date, type: number, min: 0, required: true, label: Spent so far (INR)}
+      - {name: daily_spend, flag: --daily-spend, type: json, label: "Daily spend: [1200,1350,…]"}
+      - {name: channels, flag: --channels, type: json, label: 'Channels: [{"name":"meta","budget":20000,"spend":9000}]'}
+    example: {budget: 30000, period_days: 30, days_elapsed: 12, spend_to_date: 14500, daily_spend: [1100, 1200, 1250, 1300]}

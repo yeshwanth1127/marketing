@@ -10,3 +10,43 @@ scripts:
     input: one hook per line on stdin
     output: json
     timeout_ms: 20000
+  - id: mine-hooks
+    skill: hook-mining
+    file: mine_hooks.py
+    mode: direct
+    input_name: hooks.csv
+    output_file: hooks.mined.json
+    output: json
+    label: Mine a CSV of top-performing hooks (hook-mining mine_hooks.py)
+    help: Paste a CSV with a hook column and any metric column (views, likes, saves…).
+    params:
+      - {name: csv, type: text, to: file, required: true, label: "CSV (hook,views…)", placeholder: "hook,views"}
+      - {name: top, flag: --top, type: number, min: 1, max: 500, label: Keep the top N}
+    example: {csv: "hook,views\nStop doing this before you brush,120000\nNobody tells you this about braces,90000\n3 signs your gums need help,40000\n"}
+  - id: swipe-file
+    skill: ig-viral
+    file: swipe.py
+    mode: direct
+    with_skills: [ig-reel]
+    args: ["-", "--json"]
+    output: json
+    label: Rank collected reels by outlier multiple (ig-viral swipe.py)
+    help: "Paste reels as TSV with a header row: account, followers, median, views, hook (tab-separated)."
+    params:
+      - {name: tsv, type: text, to: stdin, required: true, label: Reels (TSV)}
+    example: {tsv: "account\tfollowers\tmedian\tviews\thook\n@clinic_a\t48000\t11000\t412000\tnobody tells you this about braces\n@clinic_b\t9000\t2500\t30000\tstop doing this before you brush\n"}
+  - id: keyword-cluster
+    skill: keyword-research
+    scripts: dmp
+    file: keyword_cluster.py
+    mode: direct
+    input_name: seeds.csv
+    args: ["--format", "json"]
+    output: json
+    label: Cluster keywords into pillars and spokes (DMP keyword_cluster.py)
+    help: "CSV with a keyword column; volume and kd columns are optional."
+    params:
+      - {name: csv, flag: --keywords, type: text, to: file, required: true, label: "Keywords CSV (keyword,volume,kd)"}
+      - {name: min_volume, flag: --min-volume, type: number, min: 0, label: Minimum volume}
+      - {name: max_kd, flag: --max-kd, type: number, min: 0, max: 100, label: Maximum difficulty}
+    example: {csv: "keyword,volume,kd\ndentist in indiranagar,880,22\nbest dentist indiranagar,390,25\nroot canal cost bangalore,720,30\nroot canal price bangalore,260,28\nteeth whitening indiranagar,170,18\n"}

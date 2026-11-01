@@ -139,7 +139,7 @@ approval_required: false   # true for any module that publishes, sends or spends
 
 A skill is not "used" unless its own instructions and its own tools produced the output. Loading SKILL.md text as prompt guidance alone does not count.
 
-Facts from the current build: 144 SKILL.md folders are copied into modules and tracks. 82 skills depend on scripts (e.g. ig-reel → hookscore.py, check → eval-runner.py, verify-claims → claim-verifier.py). DMP's 108 shared scripts are vendored unmodified in `core/tools/vendor-scripts/digital-marketing-pro/scripts/`, and they read client data from a `~/.claude-marketing/brands/<client>/` layout that `core/tools/dmp.mjs` builds per run.
+Facts from the current build: 144 SKILL.md folders are copied into modules and tracks. 64 skills depend on scripts (e.g. ig-reel → hookscore.py, check → eval-runner.py, verify-claims → claim-verifier.py). DMP's 108 shared scripts are vendored unmodified in `core/tools/vendor-scripts/digital-marketing-pro/scripts/`, and they read client data from a `~/.claude-marketing/brands/<client>/` layout that `core/tools/dmp.mjs` builds per run.
 
 ### Rules
 
@@ -161,15 +161,35 @@ Facts from the current build: 144 SKILL.md folders are copied into modules and t
 | Rule | Status |
 |---|---|
 | 1 Whole folders | Done for copied skills; DMP scripts vendored |
-| 2 Tool manifests | Partial — 11 scripts declared (03-plan 1, 04-hooks 1, 05-content 5, 09-results 2, ads 2) of the 82 script-based skills |
+| 2 Tool manifests | Partial — 32 tools declared (batches 0–1) across 64 script-based skills; plan below |
 | 3 Mode A / Mode B | Both built |
 | 4 DMP adapter | Built (`core/tools/dmp.mjs`) |
 | 5 Sandbox | Folder + allowlist built; container not built |
 | 6 Receipts | Built; shown in record view |
 | 7 Action-to-skill map | Partial — hooks, copy, design, reels, calculators |
 | 8 Coverage page | Built (Settings, from receipts) |
-| 9 Golden tests | Built for wired scripts; 42/42 tests pass |
+| 9 Golden tests | Built; `tests/tools.test.mjs` runs every declared tool and compares with direct vendor runs; 73/73 tests pass |
 | 10 Release rule | Not enforced yet |
+
+### Skill script wiring plan — goal: every skill and script live (agreed 1 Nov 2026)
+
+Counted on 1 Nov 2026: **64 vendored skills ship scripts** (the earlier "82" was an over-count). "Live" means: declared in the module's
+`tools.yaml` (inputs, outputs, run mode), runnable from the app (Skill tools button or automatic on outputs), receipted, and
+covered by `tests/tools.test.mjs`, which runs every declared tool through the app and — for stateless tools — compares the
+output with the original vendor script run directly. Claude (agent mode) may already run any script of the skills it loads;
+those runs are receipted too.
+
+Stateful DMP scripts keep their files per client in `.local/dmp/<client>` (`state: persistent`), so guidelines, team,
+quality history and reports persist between runs.
+
+| Batch | Scripts | Status |
+|---|---|---|
+| 0 · Core loop | hookscore, beats, caption, detect, eval-runner, claim-verifier, budget-optimizer, creative-fatigue-predictor, sample-size-calculator, significance-tester (11) | **Live** |
+| 1 · Offline, high value | language-router (detect, supported, score, route), guidelines-manager, dm-status, mine_hooks, swipe, keyword_cluster (Hooks + SEO), brand-voice-scorer, content-scorer, ai-tell-scan, humanize, quality-tracker (log + history), report-generator, ad-budget-pacer, clv-calculator, revenue-forecaster, team-manager | **Live** (21 tools; brand voice, content score, AI-tell scan and quality history run automatically on every copy draft) |
+| 2 · Video and sound | motion-doctrine seam-gate/seam-stamp; real-sound analyze/arrange/audit/licences/mux; media-use audio; effects fx.py; watch-video watch.py (needs internet) | Next |
+| 3 · Remaining offline DMP | setup (brand check/summary), pdf-generator (growth-plan, yearly-planner), authorship (content-engine), campaign/execution/recommendation trackers and engagement-state as read views over our records, goldfish-review | After batch 2 |
+| 4 · Need internet or connectors | competitor-scraper, serp-snapshot, tech-seo-auditor, backlink_gap, seo_drift, local-seo-checker, geo-tracker, gsc-ai-performance, macro-signal-tracker, connector_executor/resolver (publish, schedule, launch), embed-c2pa + resolve_model (ad images) | With connectors (network allowlist per tool) |
+| Not used | DMP approval-manager (our approval engine is the gate) | Replaced by design |
 
 ## Source repos and licences
 
@@ -584,7 +604,7 @@ About 16 weeks to the full platform. Week counts are estimates for a 3–4 devel
 
 ### Phase status and next phase (1 Nov 2026, commit `a1850be`)
 
-Phases 0–3 screens, records, approvals and media exports exist. Phase 1.5 — make skills real — is in progress; 48/48 tests pass (incl. 6 design-engine tests).
+Phases 0–3 screens, records, approvals and media exports exist. Phase 1.5 — make skills real — is in progress; 73/73 tests pass (incl. design engine and every declared skill tool).
 
 | Work | Estimate | Done when | Status |
 |---|---|---|---|

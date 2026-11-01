@@ -1,3 +1,19 @@
 tools: []
 # External connectors are deferred. No network, shell or SQL tool is exposed to the model.
 services: [record-store]
+scripts:
+  - id: keyword-cluster
+    skill: keyword-cluster
+    scripts: dmp
+    file: keyword_cluster.py
+    mode: direct
+    input_name: seeds.csv
+    args: ["--format", "json"]
+    output: json
+    label: Cluster keywords into pillars and spokes (DMP keyword_cluster.py)
+    params:
+      - {name: csv, flag: --keywords, type: text, to: file, required: true, label: "Keywords CSV (keyword,volume,kd)"}
+      - {name: overlap, flag: --overlap, type: number, min: 0, max: 1, label: Overlap threshold}
+      - {name: min_volume, flag: --min-volume, type: number, min: 0, label: Minimum volume}
+      - {name: max_kd, flag: --max-kd, type: number, min: 0, max: 100, label: Maximum difficulty}
+    example: {csv: "keyword,volume,kd\npreschool hsr layout,590,20\nbest preschool hsr layout,320,24\nplay school near me,1300,35\nmontessori hsr layout,210,18\n"}

@@ -15,3 +15,15 @@ scripts:
     file: creative-fatigue-predictor.py
     mode: direct
     output: json
+  - id: client-report
+    skill: client-report
+    scripts: dmp
+    file: report-generator.py
+    mode: direct
+    state: persistent
+    args: ["--brand", "{brand}", "--action", "generate-report"]
+    output: json
+    label: Generate a client report (DMP report-generator.py)
+    params:
+      - {name: data, flag: --data, type: json, required: true, label: 'Report data: {"title":"Weekly","period":"2026-W44","metrics":{"leads":12,"spend":18000}}'}
+    example: {data: {title: Weekly, metrics: {leads: 12, spend: 18000}}}

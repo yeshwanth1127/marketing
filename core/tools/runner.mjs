@@ -41,6 +41,7 @@ function owner(mod,spec){
  return {meta,dir:path.join(ROOT,m.group,key,'skills',spec.skill)};
 }
 export async function runScript(ctx,mod,scriptId,{stdin='',args=[]}={}){
+ // a declared file the skill expects next to the script (e.g. hooks.json) is reachable as {skill_dir}
  const spec=scriptSpec(mod,scriptId);
  const {meta,dir:skillDir}=owner(mod,spec);
  const skillMd=fs.readFileSync(path.join(skillDir,'SKILL.md'));
@@ -51,13 +52,16 @@ export async function runScript(ctx,mod,scriptId,{stdin='',args=[]}={}){
  const env=sandboxEnv(box);const py=python();
  let work=path.join(box,'skill'),scriptPath;
  fs.cpSync(skillDir,work,{recursive:true});
+ // sibling skills a script reads by relative path (e.g. ig-viral/swipe.py → ../ig-reel/hooks.json)
+ for(const sib of spec.with_skills||[]){const src=path.join(path.dirname(skillDir),sib);if(fs.existsSync(src))fs.cpSync(src,path.join(box,sib),{recursive:true});}
  const vars={};
  let error=null,result={code:-1,out:'',err:''};const started=Date.now();
  try{
   if(shared){fs.cpSync(DMP_SCRIPTS,path.join(box,'scripts'),{recursive:true});scriptPath=path.join(box,'scripts',spec.file);work=box;
-   const dmp=prepareDmp(box,path.join(box,'scripts'),py,env,ctx);env.CLAUDE_MARKETING_HOME=dmp.home;env.CLAUDE_PLUGIN_ROOT=box;Object.assign(vars,{brand:dmp.slug,evidence_file:dmp.evidenceFile});}
+   const dmp=prepareDmp(box,path.join(box,'scripts'),py,env,ctx,{persist:spec.state==='persistent'});env.CLAUDE_MARKETING_HOME=dmp.home;env.CLAUDE_PLUGIN_ROOT=box;Object.assign(vars,{brand:dmp.slug,evidence_file:dmp.evidenceFile});}
   else scriptPath=path.join(work,spec.file);
-  const inputFile=path.join(box,'input.txt');fs.writeFileSync(inputFile,stdin);vars.input_file=inputFile;
+  const inputFile=path.join(box,spec.input_name||'input.txt');fs.writeFileSync(inputFile,stdin);vars.input_file=inputFile;
+  vars.skill_dir=work;
   const fill=a=>String(a).replace(/\{(\w+)\}/g,(m,k)=>k in vars?vars[k]:m);
   const argv=['-I',scriptPath,...(spec.args||[]).map(fill),...args.map(fill)];
   const cap=4*1024*1024;
@@ -72,6 +76,7 @@ export async function runScript(ctx,mod,scriptId,{stdin='',args=[]}={}){
    child.on('close',code=>finish({code,out,err}));
    child.stdin.end(stdin);
   });
+ if(spec.output_file&&result.code===0){const f=path.join(box,spec.output_file);if(f.startsWith(box+path.sep)&&fs.existsSync(f))result.out=fs.readFileSync(f,'utf8');}
  }catch(e){error=String(e.message);}
  finally{fs.rmSync(box,{recursive:true,force:true});}
  let output=null;

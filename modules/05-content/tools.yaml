@@ -41,3 +41,102 @@ scripts:
     args: ["--action", "verify", "--file", "{input_file}", "--evidence", "{evidence_file}"]
     input: script + caption
     output: json
+  - id: brand-voice
+    skill: check
+    scripts: dmp
+    file: brand-voice-scorer.py
+    mode: direct
+    args: ["--brand", "{brand}"]
+    output: json
+    label: Brand voice score (DMP brand-voice-scorer.py)
+    params:
+      - {name: text, flag: --file, type: text, to: file, required: true, label: Copy}
+    example: {text: "Book a calm, 30-minute check-up. We explain every step before we start."}
+  - id: content-score
+    skill: check
+    scripts: dmp
+    file: content-scorer.py
+    mode: direct
+    output: json
+    label: Content quality score (DMP content-scorer.py)
+    params:
+      - {name: text, flag: --file, type: text, to: file, required: true, label: Copy}
+      - {name: type, flag: --type, type: choice, required: true, choices: [social, ad, email, blog, landing_page], label: Content type}
+      - {name: keyword, flag: --keyword, type: string, label: Primary keyword}
+    example: {text: "Book a calm, 30-minute check-up. We explain every step before we start.", type: social}
+  - id: ai-tell-scan
+    skill: check
+    scripts: dmp
+    file: ai-tell-scan.py
+    mode: direct
+    output: json
+    label: AI-tell scan (DMP ai-tell-scan.py)
+    params:
+      - {name: text, flag: --file, type: text, to: file, required: true, label: Copy}
+      - {name: max_flagged_pct, flag: --max-flagged-pct, type: number, min: 0, max: 100, label: Max flagged paragraphs (%)}
+    example: {text: "We leverage seamless care to delve into your smile. It is a testament to our tapestry of service."}
+  - id: humanize
+    skill: ig-human
+    file: humanize.py
+    mode: direct
+    args: ["-", "--json"]
+    output: json
+    label: Strip AI phrasing from a draft (ig-human humanize.py)
+    params:
+      - {name: text, type: text, to: stdin, required: true, label: Draft}
+    example: {text: "In today's fast-paced world, it's important to note that we leverage cutting-edge care."}
+  - id: translation-score
+    skill: multilingual-score
+    scripts: dmp
+    file: language-router.py
+    mode: direct
+    args: ["--action", "score"]
+    output: json
+    label: Translation quality score (DMP language-router.py)
+    help: Use language codes such as en, hi, kn, ta, mr, te.
+    params:
+      - {name: original, flag: --original, type: text, required: true, label: Original}
+      - {name: translated, flag: --translated, type: text, required: true, label: Translation}
+      - {name: source, flag: --source, type: string, required: true, label: Source language code}
+      - {name: target, flag: --target, type: string, required: true, label: Target language code}
+      - {name: keep, flag: --do-not-translate, type: string, label: Terms to keep (comma separated)}
+    example: {original: "Book your check-up at Kaveri today", translated: "ಇಂದೇ Kaveri ಯಲ್ಲಿ ನಿಮ್ಮ ತಪಾಸಣೆ ಬುಕ್ ಮಾಡಿ", source: en, target: kn, keep: Kaveri}
+  - id: translation-route
+    skill: translate-content
+    scripts: dmp
+    file: language-router.py
+    mode: direct
+    args: ["--action", "route", "--brand", "{brand}"]
+    output: json
+    label: Translation route for a language pair (DMP language-router.py)
+    params:
+      - {name: source, flag: --source, type: string, required: true, label: Source language code}
+      - {name: target, flag: --target, type: string, required: true, label: Target language code}
+    example: {source: en, target: hi}
+  - id: quality-log
+    skill: multilingual-score
+    scripts: dmp
+    file: quality-tracker.py
+    mode: direct
+    state: persistent
+    args: ["--action", "log-eval", "--brand", "{brand}"]
+    output: json
+    label: Log a quality score to this client's history (DMP quality-tracker.py)
+    params:
+      - {name: data, flag: --data, type: json, required: true, label: 'Eval: {"content_type":"social","title":"…","scores":{"composite":82},"grade":"B+"}'}
+    example: {data: {content_type: social, title: Example, scores: {composite: 80}, grade: B}}
+  - id: quality-history
+    skill: multilingual-score
+    scripts: dmp
+    file: quality-tracker.py
+    mode: direct
+    state: persistent
+    args: ["--brand", "{brand}"]
+    output: json
+    label: Quality history, trends and regressions (DMP quality-tracker.py)
+    params:
+      - {name: action, flag: --action, type: choice, required: true, choices: [get-summary, get-trends, check-regression, get-best, get-worst], label: View}
+      - {name: content_type, flag: --content-type, type: string, label: Content type filter}
+      - {name: days, flag: --days, type: number, min: 1, max: 730, label: Days}
+      - {name: limit, flag: --limit, type: number, min: 1, max: 50, label: Limit}
+    example: {action: get-summary}
