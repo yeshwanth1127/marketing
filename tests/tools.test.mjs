@@ -4,7 +4,7 @@
 import {test,after} from 'node:test';import assert from 'node:assert/strict';import {spawnSync} from 'node:child_process';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
 import {handle} from '../core/api.mjs';import {q,pool,ROOT} from '../core/db/index.mjs';
-import {catalog,loadModule} from '../core/runtime/index.mjs';import {buildInput} from '../core/tools/params.mjs';
+import {catalog,loadModule} from '../core/runtime/index.mjs';import {buildInput} from '../core/tools/params.mjs';import {python} from '../core/tools/runner.mjs';
 after(async()=>pool.end());
 let cookie,client;
 async function request(route,body){const r=await handle(new Request('http://localhost:3100/api/'+route,{method:body?'POST':'GET',headers:{...(cookie?{cookie}:{}),...(body?{'content-type':'application/json',origin:'http://localhost:3100'}:{})},body:body?JSON.stringify(body):undefined}));return {status:r.status,data:await r.json()};}
@@ -21,7 +21,7 @@ function direct(mod,spec,input){
   if(spec.scripts==='dmp')fs.cpSync(DMP,path.join(box,'scripts'),{recursive:true});
   const script=spec.scripts==='dmp'?path.join(box,'scripts',spec.file):vendorScript;
   const fill=a=>String(a).replaceAll('{input_file}',inputFile).replaceAll('{skill_dir}',work);
-  const r=spawnSync(process.env.EXORA_PYTHON||'python3',['-I',script,...(spec.args||[]).map(fill),...input.args.map(fill)],{cwd:spec.scripts==='dmp'?box:work,input:input.stdin,encoding:'utf8',env:{PATH:process.env.PATH,HOME:box,TMPDIR:box,LANG:'C.UTF-8',PYTHONIOENCODING:'utf-8',CLAUDE_MARKETING_HOME:path.join(box,'cm')}});
+  const r=spawnSync(python(),['-I',script,...(spec.args||[]).map(fill),...input.args.map(fill)],{cwd:spec.scripts==='dmp'?box:work,input:input.stdin,encoding:'utf8',env:{PATH:process.env.PATH,HOME:box,TMPDIR:box,LANG:'C.UTF-8',PYTHONIOENCODING:'utf-8',CLAUDE_MARKETING_HOME:path.join(box,'cm'),...(fs.existsSync(path.join(ROOT,'.local/nltk_data'))?{NLTK_DATA:path.join(ROOT,'.local/nltk_data')}:{})}});
   let out=r.stdout;if(spec.output_file&&fs.existsSync(path.join(box,spec.output_file)))out=fs.readFileSync(path.join(box,spec.output_file),'utf8');
   return {status:r.status,out:spec.output==='json'?JSON.parse(out):out,err:r.stderr};
  }finally{fs.rmSync(box,{recursive:true,force:true});}
@@ -57,7 +57,7 @@ test('tool inputs are validated (text length, choices) before anything runs',asy
 import {runToolForClient} from '../core/tools/tool-job.mjs';
 import crypto from 'node:crypto';
 const ffmpeg=process.env.FFMPEG_BIN||'ffmpeg';
-const hasPy=m=>spawnSync(process.env.EXORA_PYTHON||'python3',['-c','import '+m]).status===0;
+const hasPy=m=>spawnSync(python(),['-c','import '+m]).status===0;
 async function addFile(name,mime,make){const fid=crypto.randomUUID();const rel=path.join('uploads',client,fid+'-'+name);const full=path.join(ROOT,'.local',rel);fs.mkdirSync(path.dirname(full),{recursive:true});make(full);
  await q('INSERT INTO files(id,client_id,name,mime,size,storage_path) VALUES($1,$2,$3,$4,$5,$6)',[fid,client,name,mime,fs.statSync(full).size,rel]);return fid;}
 let video,audio,user;
