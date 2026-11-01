@@ -2,7 +2,8 @@ import {spawn,spawnSync} from 'node:child_process';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';
 
 function exec(command,args=[]){const result=spawnSync(command,args,{encoding:'utf8',timeout:8000,stdio:['ignore','pipe','pipe']});return `${result.stdout||''}${result.stderr||''}`.trim();}
-function binary(){const found=exec('/usr/bin/which',['claude']);return found.startsWith('/')?found.split('\n')[0]:null;}
+function binary(){if(process.env.EXORA_CLAUDE_BIN)return process.env.EXORA_CLAUDE_BIN;const found=exec('/usr/bin/which',['claude']);return found.startsWith('/')?found.split('\n')[0]:null;}
+export function claudeBinary(){const b=binary();if(!b)throw new Error('Claude Code is not installed.');return b;}
 function accountLabel(){try{const config=JSON.parse(fs.readFileSync(path.join(os.homedir(),'.claude.json'),'utf8')),account=config.oauthAccount||{};return [account.displayName,account.email].filter(Boolean).join(' · ')||undefined;}catch{return undefined;}}
 let cached={at:0,value:null};
 export function claudeState(force=false){if(!force&&cached.value&&Date.now()-cached.at<5000)return cached.value;const command=binary();let value;if(!command)value={installed:false,connected:false,detail:'Claude Code is not installed.'};else{const raw=exec(command,['auth','status']);try{const status=JSON.parse(raw);value={installed:true,connected:Boolean(status.loggedIn),account:status.loggedIn?accountLabel():undefined,detail:status.loggedIn?`Claude account · ${status.authMethod||'authenticated'}`:'Claude account not connected',version:exec(command,['--version']).split('\n').at(-1)};}catch{value={installed:true,connected:false,detail:raw||'Unable to read Claude login status',version:exec(command,['--version']).split('\n').at(-1)};}}cached={at:Date.now(),value};return value;}

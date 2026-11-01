@@ -105,3 +105,17 @@ test('Step 9 report runs budget reallocation and creative fatigue on real metric
  assert.equal(rep.data.creative_fatigue[0].creative_id,'reel-1');
  assert.ok(rep.data.receipts.length>=2);
 });
+
+test('Claude agent mode: skill scripts run inside the sandbox are receipted; other commands are refused',async()=>{
+ process.env.EXORA_CLAUDE_BIN=path.join(ROOT,'tests/fake-claude.mjs');
+ try{
+  const h=await action({action:'generate',module:'04-hooks',provider:'claude',brief:'Family dental care'});assert.equal(h.status,200,JSON.stringify(h.data));
+  const rec=h.data.records[0];const rows=(await q('SELECT script,exit_code,vendor_match,run_id FROM tool_runs WHERE id=ANY($1::uuid[])',[rec.data.receipts])).rows;
+  assert.ok(rows.some(r=>r.script==='hookscore.py'&&r.exit_code===0&&r.vendor_match&&r.run_id),JSON.stringify(rows));
+  assert.ok(!rows.some(r=>/curl/.test(r.script)));
+  assert.match(rec.data.skill_notes,/fake agent/);
+  const c=await action({action:'generate',module:'05-content',provider:'claude',brief:'Family dental care'});assert.equal(c.status,200,JSON.stringify(c.data));
+  const crow=(await q('SELECT script,exit_code,vendor_match FROM tool_runs WHERE id=ANY($1::uuid[])',[c.data.records[0].data.receipts])).rows;
+  assert.ok(crow.some(r=>r.script==='claim-verifier.py'&&r.exit_code===0&&r.vendor_match),JSON.stringify(crow));
+ }finally{delete process.env.EXORA_CLAUDE_BIN;}
+});

@@ -11,7 +11,10 @@
     "db:seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
     "worker": "node --env-file-if-exists=.env.local scripts/worker.mjs",
     "test": "node --env-file-if-exists=.env.local scripts/test.mjs",
-    "local": "bash scripts/local.sh"
+    "local": "bash scripts/local.sh",
+    "agent:smoke": "node --env-file-if-exists=.env.local scripts/agent-smoke.mjs",
+    "setup:python": "bash scripts/setup-python.sh",
+    "vendor:sync": "bash scripts/vendor-sync.sh"
   },
   "dependencies": {
     "@ffprobe-installer/ffprobe": "^2.1.2",
