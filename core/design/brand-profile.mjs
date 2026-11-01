@@ -3,7 +3,7 @@ import fs from 'node:fs';import path from 'node:path';import {fileURLToPath} fro
 const ROOT=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 export const ENGINE=path.join(ROOT,'modules/06-design-video/skills/exora-design-system/engine');
 export const FONTS=path.join(ROOT,'exora/fonts');
-const engine=await import(path.join(ENGINE,'index.mjs'));
+import * as engine from '../../modules/06-design-video/skills/exora-design-system/engine/index.mjs';
 export const {compose,normalize:normalizeRaw,audit,LAYOUTS,CANVAS,describe,css,rolesFromPalette}=engine;
 let cached;export const catalog=()=>cached||(cached=JSON.parse(fs.readFileSync(path.join(FONTS,'catalog.json'),'utf8')));
 // BrandKit record data (+ client) → full brand profile.

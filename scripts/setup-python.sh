@@ -12,7 +12,7 @@ P=.local/pyenv/bin/python
 # Batch 0-1: DMP lite set (pins from DMP requirements.txt) + brand extraction deps
 "$P" -m pip install -q nltk==3.10.3 textstat==0.7.13 pillow==12.3.0 pypdf
 mkdir -p .local/nltk_data
-"$P" -c "import nltk;[nltk.download(p,download_dir='.local/nltk_data',quiet=True) for p in ['punkt_tab','stopwords','averaged_perceptron_tagger','averaged_perceptron_tagger_eng','vader_lexicon']]"
+"$P" -c "import nltk;[nltk.download(p,download_dir='.local/nltk_data',quiet=True) for p in ['punkt_tab','punkt','cmudict','stopwords','averaged_perceptron_tagger','averaged_perceptron_tagger_eng','vader_lexicon']]"
 echo "OK batch 0-1 (DMP scorers)"
 # Batch 2: real-sound + earshot (sound design and listening checks)
 if "$P" -m pip install -q numpy scipy soundfile soxr librosa pyloudnorm scikit-learn matplotlib; then echo "OK batch 2 audio (real-sound)"; else echo "FAILED batch 2 audio"; fi

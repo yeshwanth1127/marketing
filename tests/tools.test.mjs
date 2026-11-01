@@ -78,7 +78,8 @@ test('add-soundtrack (real-sound mux.mjs) writes a video with sound as a client 
  const {args,stdin,files}=buildInput(spec,{video,audio});
  const r=await runToolForClient({client:c,user,moduleKey:'06-design-video',toolId:'add-soundtrack',args,stdin,files});
  assert.equal(r.files.length,1);const row=(await q('SELECT * FROM files WHERE id=$1',[r.files[0].id])).rows[0];assert.equal(row.mime,'video/mp4');
- const probe=spawnSync('ffprobe',['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path.join(ROOT,'.local',row.storage_path)],{encoding:'utf8'}).stdout;
+ const ffprobe=[path.join(ROOT,'node_modules/@ffprobe-installer',`${process.platform}-${process.arch}`,'ffprobe'),'/usr/bin/ffprobe'].find(p=>fs.existsSync(p))||'ffprobe';
+ const probe=spawnSync(ffprobe,['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path.join(ROOT,'.local',row.storage_path)],{encoding:'utf8'}).stdout;
  assert.match(probe,/video/);assert.match(probe,/audio/);
  assert.equal((await q('SELECT vendor_match FROM tool_runs WHERE id=$1',[r.receipt])).rows[0].vendor_match,true);
 });

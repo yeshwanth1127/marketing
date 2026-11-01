@@ -74,7 +74,9 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
   const args=['-p',prompt,'--output-format','stream-json','--verbose','--max-turns',String(maxTurns),
    '--tools','Read,Write,Edit,Glob,Grep,Bash',
    '--allowedTools',['Read','Write','Edit','Glob','Grep',...allowed].join(','),
-   '--disallowedTools','WebFetch,WebSearch,Task'];
+   '--disallowedTools','WebFetch,WebSearch,Task',
+   // isolate from the operator's own MCP servers and their credentials
+   '--strict-mcp-config','--mcp-config','{"mcpServers":{}}'];
   const {code,stdout,stderr}=await new Promise(resolve=>{
    const child=spawn(claudeBinary(),args,{cwd:box,env,stdio:['ignore','pipe','pipe']});
    let stdout='',stderr='',done=false;const cap=16*1024*1024;
@@ -103,7 +105,7 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
     VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
     [rid,ctx.client.id,ctx.run,mod.key,owner.skill,owner.source,owner.file,sha(md),sha(buf),vendorMatch,sha(r.command),sha(r.output),r.ok?0:1,null,r.ok?null:r.output.slice(-500),ctx.user?.id||null]);
   }
-  if(code!==0)throw new Error(`Claude exited with code ${code}. ${String(stderr).slice(-600)}`);
+  if(code!==0){let why='';for(const l of String(stdout).split('\n')){try{const e=JSON.parse(l);if(e.type==='result'&&(e.is_error||e.subtype!=='success'))why=String(e.result||e.subtype||'');}catch{}}throw new Error(`Claude exited with code ${code}. ${why?'Claude said: '+why.slice(0,600)+' · ':''}${String(stderr).slice(-400)}`);}
   const collected=collect?await collect(box):null;
   const outFile=path.join(box,'output.json');
   let outputs=null;

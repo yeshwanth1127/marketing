@@ -3,7 +3,7 @@
 import {spawn} from 'node:child_process';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import crypto from 'node:crypto';
 import {ROOT,q,id} from '../db/index.mjs';
-import {prepareDmp} from './dmp.mjs';import {spawnSync} from 'node:child_process';import {createRequire} from 'node:module';
+import {prepareDmp} from './dmp.mjs';import {spawnSync} from 'node:child_process';
 
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
 const DMP_SCRIPTS=path.join(ROOT,'core/tools/vendor-scripts/digital-marketing-pro/scripts');
@@ -25,7 +25,7 @@ export function scriptSpec(mod,scriptId){
  return spec;
 }
 // ffmpeg/ffprobe for media tools: the configured FFMPEG_BIN folder and the bundled ffprobe.
-function mediaBins(){const out=[];if(process.env.FFMPEG_BIN)out.push(path.dirname(process.env.FFMPEG_BIN));out.push(path.join(process.env.HOME||'','.local/bin'));try{const p=createRequire(import.meta.url)('@ffprobe-installer/ffprobe').path;out.push(path.dirname(p));}catch{}return out;}
+function mediaBins(){const out=[];if(process.env.FFMPEG_BIN)out.push(path.dirname(process.env.FFMPEG_BIN));out.push(path.join(process.env.HOME||'','.local/bin'));const fp=path.join(ROOT,'node_modules/@ffprobe-installer',`${process.platform}-${process.arch}`);if(fs.existsSync(fp))out.push(fp);return out;}
 // Network is not available to skill scripts: proxies point at a closed local port.
 function sandboxEnv(box){
  const dead='http://127.0.0.1:9';
