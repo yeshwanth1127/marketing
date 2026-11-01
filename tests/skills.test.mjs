@@ -132,3 +132,18 @@ test('Claude design composition: slides are collected and the preview tool run i
   assert.ok(rows.some(r=>r.script==='preview.mjs'&&r.skill==='exora-design-system'&&r.source==='EXORA'),JSON.stringify(rows));
  }finally{delete process.env.EXORA_CLAUDE_BIN;}
 });
+
+test('Claude reel composition: HyperFrames project is kept and CLI runs are receipted',async()=>{
+ process.env.EXORA_CLAUDE_BIN=path.join(ROOT,'tests/fake-claude.mjs');
+ try{
+  const fs=await import('node:fs');const os=await import('node:os');
+  const {composeVideo}=await import('../core/design/compose.mjs');
+  const c=(await q('SELECT * FROM clients WHERE id=$1',[client])).rows[0];const user=(await q("SELECT * FROM users WHERE role='admin' LIMIT 1")).rows[0];
+  const keepDir=fs.mkdtempSync(path.join(os.tmpdir(),'keep-'));
+  const asset={id:'00000000-0000-0000-0000-000000000002',title:'Hook',data:{type:'video',format:'reel',on_screen_text:['Before you book a dentist, ask this'],beat_sheet:{total_seconds:9.2,beats:[]}}};
+  const res=await composeVideo({client:c,user,run:null,records:[],asset,brand:{colors:['#0f3d3e']},keepDir});
+  assert.equal(res.seconds,10);assert.ok(fs.existsSync(path.join(res.dir,'index.html')));assert.ok(fs.existsSync(path.join(res.dir,'assets/gsap.min.js')));
+  const rows=(await q('SELECT skill,script,source FROM tool_runs WHERE id=ANY($1::uuid[])',[res.receipts])).rows;
+  assert.ok(rows.some(r=>r.skill==='hyperframes-cli'&&r.script==='hyperframes lint'&&r.source==='HF'),JSON.stringify(rows));
+ }finally{delete process.env.EXORA_CLAUDE_BIN;}
+});

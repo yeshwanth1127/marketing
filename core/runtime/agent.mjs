@@ -38,7 +38,7 @@ export function buildBox(mod,skills,ctx,opts={}){
   env.CLAUDE_MARKETING_HOME=dmp.home;env.CLAUDE_PLUGIN_ROOT=box;
  }
  fs.writeFileSync(path.join(box,'workspace.json'),JSON.stringify(ctx.workspace||{},null,1));
- for(const [rel,content] of Object.entries(opts.files||{})){const dest=path.join(box,rel);fs.mkdirSync(path.dirname(dest),{recursive:true});if(content&&typeof content==='object'&&content.copy)fs.cpSync(content.copy,dest,{recursive:true});else fs.writeFileSync(dest,content);}
+ for(const [rel,content] of Object.entries(opts.files||{})){const dest=path.join(box,rel);fs.mkdirSync(path.dirname(dest),{recursive:true});if(content&&typeof content==='object'&&content.copy)fs.cpSync(content.copy,dest,{recursive:true});else fs.writeFileSync(dest,content);if(rel.startsWith('bin/'))fs.chmodSync(dest,0o755);}
  for(const a of opts.allowed||[])allowed.push(a);
  for(const [rel,o] of Object.entries(opts.owners||{}))scriptOwner[rel]=o;
  return {box,allowed,scriptOwner,env,dmp};
@@ -66,7 +66,7 @@ export function receiptsFromStream(stdout){
  return runs;
 }
 
-export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=40,files,allowed:extraAllowed,prompt:customPrompt,collect,requireOutput=true,owners}={}){
+export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=40,files,allowed:extraAllowed,prompt:customPrompt,collect,requireOutput=true,owners,commandOwners=[]}={}){
  const {box,allowed,scriptOwner,env,dmp}=buildBox(mod,skills,ctx,{files,allowed:extraAllowed,owners});
  const started=Date.now();
  try{
@@ -89,7 +89,11 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
   const receipts=[];
   for(const r of receiptsFromStream(stdout)){
    const m=r.command.match(/^\s*(?:python3|node)\s+((?:skills\/[\w.-]+|scripts|tools)\/[\w./-]+\.(?:py|mjs))/);
-   const owner=m&&scriptOwner[m[1]];if(!owner)continue;
+   let owner=m&&scriptOwner[m[1]];
+   if(!owner){const co=commandOwners.find(o=>r.command.trim().startsWith(o.prefix));if(co){const md=fs.readFileSync(path.join(mod.dir,'skills',co.skill,'SKILL.md'));const rid=id();receipts.push(rid);
+    await q(`INSERT INTO tool_runs(id,client_id,run_id,module,skill,source,script,skill_sha256,script_sha256,vendor_match,input_sha256,output_sha256,exit_code,duration_ms,error,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
+     [rid,ctx.client.id,ctx.run,mod.key,co.skill,co.source,r.command.trim().split(/\s+/).slice(0,2).join(' '),sha(md),sha(co.version||''),false,sha(r.command),sha(r.output),r.ok?0:1,null,r.ok?null:r.output.slice(-500),ctx.user?.id||null]);}
+    continue;}
    const buf=fs.readFileSync(owner.abs);let vendorMatch=false;
    const vendorPath=owner.shared?path.join(ROOT,'vendor/digital-marketing-pro/scripts',owner.file):null;
    try{if(vendorPath)vendorMatch=fs.readFileSync(vendorPath).equals(buf);else{const meta=(mod.skills||[]).find(s=>s.name===owner.skill);vendorMatch=fs.readFileSync(path.join(ROOT,'vendor',path.dirname(meta.path),owner.file)).equals(buf);}}catch{}

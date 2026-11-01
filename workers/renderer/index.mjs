@@ -10,6 +10,21 @@ for(let i=0;i<count;i++){const html=composed?payload.html[i]:artwork({title:line
  else{await page.setContent(html,{waitUntil:'load'});await page.evaluate(()=>{const section=document.querySelector('section'),title=document.querySelector('h1');let size=parseFloat(getComputedStyle(title).fontSize);while(section.scrollHeight>section.clientHeight&&size>30){size-=2;title.style.fontSize=size+'px';}});}
  const issues=await page.evaluate(checkFn,{format:asset.data.format,margin:MARGIN[asset.data.format],banned:payload.brand?.banned_words||[]});design_checks.push({frame:i+1,issues});
  const file=path.join(dir,`slide-${i+1}.png`);await page.screenshot({path:file});files.push({id:id(),path:file,name:`${asset.data.type}-${i+1}.png`,mime:'image/png'});}
+if(asset.data.type==='video'&&payload.video_dir){
+ // Claude-composed HyperFrames project: render it and run HyperFrames' own check as the final gate.
+ const output=path.join(dir,'reel.mp4');const require=createRequire(import.meta.url),probe=require('@ffprobe-installer/ffprobe').path;
+ const project=payload.video_dir;const idx=fs.readFileSync(path.join(project,'index.html'),'utf8');
+ const want=Number((idx.match(/data-composition-id="[^"]*"[^>]*data-duration="([\d.]+)"/)||idx.match(/data-duration="([\d.]+)"/)||[])[1]);
+ const env={...process.env,HYPERFRAMES_NO_TELEMETRY:'1',DO_NOT_TRACK:'1',HYPERFRAMES_CONFIG_DIR:path.join(ROOT,'.local/hyperframes'),HYPERFRAMES_BROWSER_PATH:process.env.CHROME_BIN||'/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',PATH:[path.dirname(probe),path.dirname(process.env.FFMPEG_BIN||'/Users/ysw/.local/bin/ffmpeg'),process.env.PATH].join(path.delimiter)};
+ const hf=path.join(ROOT,'node_modules/hyperframes/bin/hyperframes.mjs');
+ let video_checks=null;
+ try{const c=await exec(process.execPath,[hf,'check',project,'--json'],{env,timeout:240000,maxBuffer:20000000});video_checks=JSON.parse(c.stdout);}catch(e){try{video_checks=JSON.parse(e.stdout);}catch{video_checks={error:String(e.message).slice(0,500)};}}
+ await exec(process.execPath,[hf,'render',project,'--quality','looks','--workers','1','-o',output],{env,timeout:900000,maxBuffer:5000000});
+ const metadata=JSON.parse((await exec(probe,['-v','quiet','-print_format','json','-show_format','-show_streams',output],{timeout:10000})).stdout);
+ if(want&&Math.abs(Number(metadata.format.duration)-want)>.25)throw new Error(`Video duration ${metadata.format.duration}s does not match the composition's ${want}s`);
+ files.push({id:id(),path:output,name:'reel.mp4',mime:'video/mp4'});
+ return {files,engine:'Claude-composed HyperFrames + Chromium + FFmpeg',width,height,design_checks,video_checks,seconds:Number(metadata.format.duration)};
+}
 if(asset.data.type==='video'){
  const output=path.join(dir,'reel.mp4');
  const require=createRequire(import.meta.url),probe=require('@ffprobe-installer/ffprobe').path;
