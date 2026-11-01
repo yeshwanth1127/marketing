@@ -30,6 +30,23 @@ async function lintCopy(ctx,mod,out){
   out.data.ai_tell=r.ok?{human_score:r.output.human_score,checks:r.output.checks}:{error:r.error};
   if(r.ok&&typeof r.output.human_score==='number'&&r.output.human_score<60)extra.push({severity:'warning',message:`Reads machine-written (ig-human detect.py human score ${r.output.human_score}/100). Rewrite flagged phrases.`,source:'ig-human/detect.py'});
  }
+ const body=[script,caption].filter(Boolean).join('\n\n');
+ if(body&&has(mod,'quality-gate')){
+  const r=await runScript(ctx,mod,'quality-gate',{stdin:body});receipts.push(r.receipt);
+  if(r.ok){const o=r.output;
+   out.data.quality_gate={decision:o.decision,composite_score:o.composite_score,grade:o.grade,interpretation:o.interpretation,auto_rejected:o.auto_rejected,issues:o.issues||[],missing_dimensions:o.missing_dimensions||[]};
+   if(o.auto_rejected||o.decision==='FAIL')extra.push({severity:'error',message:'DMP quality gate failed: '+(o.interpretation||o.decision),source:'check/eval-runner.py'});
+   for(const i of o.issues||[]){const sev=i.severity==='critical'?'error':i.severity==='low'?'info':'warning';extra.push({severity:sev,message:`${i.dimension}: ${i.reason}${i.value?` ("${i.value}")`:''}`,source:'check/eval-runner.py'});}
+  }else out.data.quality_gate={error:r.error};
+ }
+ if(body&&has(mod,'claim-check')){
+  const r=await runScript(ctx,mod,'claim-check',{stdin:body});receipts.push(r.receipt);
+  if(r.ok){const o=r.output;out.data.claim_check={score:o.verification_score,interpretation:o.interpretation,summary:o.summary,claims:o.claims||[]};
+   for(const c of o.claims||[]){
+    if(c.status==='contradicted')extra.push({severity:'error',message:`Claim contradicts recorded evidence: "${c.text}"`,source:'verify-claims/claim-verifier.py'});
+    else if(c.status==='unverified'||c.status==='evidence_unverified')extra.push({severity:'warning',message:`Claim needs evidence before approval: "${c.text}"`,source:'verify-claims/claim-verifier.py'});}
+  }else out.data.claim_check={error:r.error};
+ }
  if(script&&has(mod,'beat-sheet')){
   const r=await runScript(ctx,mod,'beat-sheet',{stdin:script});receipts.push(r.receipt);
   out.data.beat_sheet=r.ok?r.output:{error:r.error};

@@ -1,0 +1,1823 @@
+{
+  "$comment": "Canonical model registry for the Neelverse Marketing Suite (DMP / ContentForge / SocialForge). Update this file then run scripts/sync_model_registry.sh to distribute: each sibling copy is this file minus the DMP-only families listed in scripts/registry_mirror.py. The resolver consults this registry to map human-readable aliases to concrete model IDs and to warn when a deprecated model is being used. See refresh_models.py to poll provider APIs for drift.",
+  "schema_version": "1.0",
+  "last_updated": "2026-10-27",
+  "last_updated_by": "manual refresh from vendor pages read 2026-10-27 (each entry's docs_url and notes name its source; see docs/MODEL-CURATOR.md); speech kinds (text-to-speech, speech-to-text) added in DMP 3.37.2 as pins with an expiry; gpt-5.1 marked deprecated and gpt-6-sol added from OpenAI's deprecations and model pages read 2026-10-27 (DMP 3.40.0)",
+  "next_review_due": "2026-11-16",
+  "stewardship_policy": "Re-validate at least quarterly OR whenever a script call returns a 404 / deprecation warning. Frontier model landscape shifts every ~6 weeks; treat any entry older than 3 months as suspect. Verify the next time `refresh_models.py` reports drift, or before any new feature ship.",
+  "param_compatibility_notes": {
+    "anthropic_sampling_parameters": "From API version 2026-10-21 (the current SDK and CLI majors) temperature, top_p and top_k are removed from Messages and Message Batches requests for EVERY model: a request that sends any of them returns HTTP 400, even at the default value. On the older version 2023-06-01, Claude 4.7 and later (Opus 4.7, 4.8, 5, 5.5, Sonnet 5, 5.5, Fable 5, 5.1, Haiku 5.5) and Claude Mythos Preview already return 400 for a non-default value. Omit all three on every Anthropic call. Sources: https://platform.claude.com/docs/en/about-claude/model-deprecations (API parameter deprecations) and https://platform.claude.com/docs/en/api/migration-2026-10-21. Read 2026-10-27.",
+    "gemini_sampling_params": "Gemini API deprecated temperature, top_p and top_k on 2026-07-21 (changelog). Omit them. Source: https://ai.google.dev/gemini-api/docs/changelog",
+    "openai_video": "OpenAI has NO video generation model as of 2026-10-04: the Sora 2 models and the Videos API shut down 2026-09-24 with no replacement listed. Source: https://developers.openai.com/api/docs/deprecations",
+    "veo_backend": "Veo 3.1 is served by Vertex AI only (veo-3.1-generate-001 and veo-3.1-fast-generate-001, GA since 2025-11-17, retirement 'November 17, 2026 or later'). The Gemini API shut every Veo 3.1 PREVIEW id on 2026-10-22 and lists no Veo model; its video model is gemini-omni-1.1-flash, called with client.interactions.create (google-genai >= 2.28.0). A GEMINI_API_KEY alone cannot make a Veo clip. Veo 3.1 takes 4, 6 or 8 second clips only. Sources: Vertex model-versions and Veo 3.1 pages, Gemini API deprecations and Omni pages, read 2026-10-27."
+  },
+  "tiers": {
+    "frontier": "Best-in-class capability, highest cost. Use for complex reasoning, multi-step planning, agentic flows.",
+    "balanced": "Mid-tier capability and cost. Default for production workloads.",
+    "fast": "Optimised for low latency and low cost. Use for high-volume / simple tasks.",
+    "frontier-image": "Best-in-class image generation.",
+    "balanced-image": "Production-grade image generation, lower cost.",
+    "frontier-image-character": "Specialised for consistent character / face preservation.",
+    "frontier-video": "Best-in-class video generation.",
+    "frontier-multimodal": "Native handling of text + image + audio + video in one call.",
+    "balanced-video": "Production-grade video generation, lower cost than the frontier video tier.",
+    "text-to-speech": "Turns text into speech. Pinned with an expiry: no vendor list endpoint tells speech models from chat models, so each entry is re-read at the vendor's page before its pin_expires date.",
+    "speech-to-text": "Transcribes speech to text. Pinned with an expiry, like text-to-speech."
+  },
+  "models": [
+    {
+      "id": "claude-opus-4-8",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Opus 4.8",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-05",
+      "context_window": 1000000,
+      "best_for": [
+        "complex reasoning",
+        "agentic workflows",
+        "code generation",
+        "deep analysis"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://docs.anthropic.com/en/docs/about-claude/models",
+      "notes": "Moved to Anthropic's legacy table with the Claude 5 launches (still available; $5/$25). 1M context per current docs. Rejects temperature/top_p/top_k — see param_compatibility_notes. For new work Anthropic recommends claude-opus-5.",
+      "tentative_retirement": "2027-05-28"
+    },
+    {
+      "id": "claude-opus-4-7",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Opus 4.7",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-02",
+      "tentative_retirement": "2027-04-16",
+      "context_window": 200000,
+      "long_context_variant": "claude-opus-4-7[1m]",
+      "best_for": [
+        "complex reasoning",
+        "agentic workflows",
+        "code generation",
+        "deep analysis"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://docs.anthropic.com/en/docs/about-claude/models",
+      "notes": "Rejects temperature/top_p/top_k — see param_compatibility_notes."
+    },
+    {
+      "id": "claude-opus-4-6",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Opus 4.6",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "tentative_retirement": "2027-02-05",
+      "context_window": 200000,
+      "best_for": [
+        "complex reasoning",
+        "agentic workflows",
+        "code generation"
+      ]
+    },
+    {
+      "id": "claude-opus-4-5-20251101",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Opus 4.5",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2025-11",
+      "tentative_retirement": "2026-11-24",
+      "context_window": 200000,
+      "notes": "Legacy. Retirement not sooner than 2026-11-24: move to claude-opus-5-5 before then."
+    },
+    {
+      "id": "claude-opus-4-1-20250805",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Opus 4.1",
+      "status": "retired",
+      "released": "2025-08",
+      "deprecation_date": "2026-06-05",
+      "shutdown_date": "2026-08-05",
+      "replacement_id": "claude-opus-4-8",
+      "notes": "Retired 2026-08-05. Source: https://platform.claude.com/docs/en/about-claude/model-deprecations"
+    },
+    {
+      "id": "claude-sonnet-4-6",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Sonnet 4.6",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-01",
+      "tentative_retirement": "2027-02-17",
+      "context_window": 200000,
+      "best_for": [
+        "general production workloads",
+        "writing",
+        "analysis",
+        "tool use"
+      ]
+    },
+    {
+      "id": "claude-sonnet-4-5-20250929",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Sonnet 4.5",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "deprecated",
+      "released": "2025-09",
+      "context_window": 200000,
+      "best_for": [
+        "general production workloads",
+        "writing",
+        "analysis"
+      ],
+      "notes": "Deprecated 2026-09-30, retires 2026-11-30; replacement claude-sonnet-5-5. Source: https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "replacement_id": "claude-sonnet-5-5",
+      "deprecation_date": "2026-09-30",
+      "shutdown_date": "2026-11-30"
+    },
+    {
+      "id": "claude-haiku-4-5-20251001",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Haiku 4.5",
+      "tier": "fast",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2025-10",
+      "tentative_retirement": "2026-10-15",
+      "context_window": 200000,
+      "best_for": [
+        "high-volume classification",
+        "low-latency UX",
+        "cheap batch work"
+      ],
+      "notes": "Legacy but Active. Its 'not sooner than 2026-10-15' window is open and no deprecation notice had been issued on 2026-10-27 (retirement_checked); at least 60 days' notice is promised before retirement. Prefer claude-haiku-5-5.",
+      "replacement_id": "claude-haiku-5-5",
+      "retirement_checked": "2026-10-27"
+    },
+    {
+      "id": "gpt-5.5",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5.5",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "supported",
+      "replacement_id": "gpt-5.6-sol",
+      "released": "2026-06",
+      "best_for": [
+        "frontier reasoning",
+        "multimodal",
+        "agentic"
+      ],
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "notes": "OpenAI's June 2026 flagship, replaced GPT-5 (deprecated June 11, retiring Dec 11 2026). Superseded by the GPT-5.6 family (Sol/Terra/Luna, GA 2026-07-09); still served, but new work should target gpt-5.6-sol."
+    },
+    {
+      "id": "gpt-5.5-pro",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5.5 Pro",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "supported",
+      "replacement_id": "gpt-5.6-sol",
+      "released": "2026-06",
+      "best_for": [
+        "deepest reasoning",
+        "long-running agentic loops"
+      ],
+      "notes": "Superseded by the GPT-5.6 family (GA 2026-07-09); still served. Target gpt-5.6-sol for new work."
+    },
+    {
+      "id": "gpt-5.4-mini",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5.4 mini",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "replacement_id": "gpt-5.6-terra",
+      "released": "2026-06",
+      "best_for": [
+        "cost-sensitive production"
+      ],
+      "notes": "Superseded by the GPT-5.6 family (GA 2026-07-09); still served. Target gpt-5.6-terra for new work."
+    },
+    {
+      "id": "gpt-5.4-nano",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5.4 nano",
+      "tier": "fast",
+      "modality": [
+        "text"
+      ],
+      "status": "deprecated",
+      "replacement_id": "gpt-6-luna",
+      "released": "2026-06",
+      "best_for": [
+        "high-volume cheap inference"
+      ],
+      "notes": "Deprecated 2026-10-01, shutdown 2027-04-01 (snapshot gpt-5.4-nano-2026-03-17); replacement gpt-6-luna. Source: https://developers.openai.com/api/docs/deprecations",
+      "deprecation_date": "2026-10-01",
+      "shutdown_date": "2027-04-01"
+    },
+    {
+      "id": "gpt-image-2",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT Image 2",
+      "tier": "balanced-image",
+      "modality": [
+        "image-gen",
+        "image-edit"
+      ],
+      "status": "supported",
+      "released": "2026-06",
+      "best_for": [
+        "text-to-image",
+        "image edits"
+      ],
+      "notes": "Superseded but not deprecated as of 2026-10-04. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gpt-5",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5",
+      "status": "deprecated",
+      "released": "2025-08",
+      "deprecation_date": "2026-06-11",
+      "shutdown_date": "2026-12-11",
+      "replacement_id": "gpt-5.6-sol",
+      "notes": "Shutdown 2026-12-11. Replacement gpt-5.6-sol. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gpt-5-mini",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5 mini",
+      "status": "deprecated",
+      "deprecation_date": "2026-06-11",
+      "shutdown_date": "2026-12-11",
+      "replacement_id": "gpt-5.6-terra",
+      "notes": "Shutdown 2026-12-11. Replacement gpt-5.6-terra. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gpt-5-nano",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5 nano",
+      "status": "deprecated",
+      "deprecation_date": "2026-06-11",
+      "shutdown_date": "2026-12-11",
+      "replacement_id": "gpt-5.6-luna",
+      "notes": "Shutdown 2026-12-11. Replacement gpt-5.6-luna. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gpt-5-pro",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5 Pro",
+      "status": "deprecated",
+      "deprecation_date": "2026-06-11",
+      "shutdown_date": "2026-12-11",
+      "replacement_id": "gpt-5.6-sol",
+      "notes": "Shutdown 2026-12-11. Replacement gpt-5.6-sol (reasoning.mode: pro). Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "o3-2025-04-16",
+      "vendor": "openai",
+      "family": "openai-o",
+      "display_name": "OpenAI o3",
+      "status": "deprecated",
+      "deprecation_date": "2026-06-11",
+      "shutdown_date": "2026-12-11",
+      "replacement_id": "gpt-5.6-sol",
+      "notes": "Shutdown 2026-12-11. Replacement gpt-5.6-sol. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "o3-pro-2025-06-10",
+      "vendor": "openai",
+      "family": "openai-o",
+      "display_name": "OpenAI o3-pro",
+      "status": "deprecated",
+      "deprecation_date": "2026-06-11",
+      "shutdown_date": "2026-12-11",
+      "replacement_id": "gpt-5.6-sol",
+      "notes": "Shutdown 2026-12-11. Replacement gpt-5.6-sol (reasoning.mode: pro). Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gpt-4o-2024-05-13",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-4o (May 2024 snapshot)",
+      "status": "retired",
+      "deprecation_date": "2026-04-22",
+      "shutdown_date": "2026-10-23",
+      "replacement_id": "gpt-6-luna",
+      "notes": "Shut down 2026-10-23. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gpt-4o",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-4o",
+      "status": "deprecated",
+      "replacement_id": "gpt-6-luna",
+      "notes": "Shutdown 2027-01-14 (snapshots gpt-4o-2024-08-06, gpt-4o-2024-11-20). Announced 2026-10-14. Source: https://developers.openai.com/api/docs/deprecations",
+      "deprecation_date": "2026-10-14",
+      "shutdown_date": "2027-01-14"
+    },
+    {
+      "id": "gpt-4o-mini",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-4o mini",
+      "status": "deprecated",
+      "replacement_id": "gpt-6-luna",
+      "deprecation_date": "2026-10-14",
+      "shutdown_date": "2027-01-14",
+      "notes": "Shutdown 2027-01-14 (gpt-4o-mini-2024-07-18). Announced 2026-10-14. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gemini-3-pro",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3 Pro",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "deprecated",
+      "released": "2026-03",
+      "best_for": [
+        "frontier reasoning",
+        "long-context",
+        "multimodal"
+      ],
+      "api_endpoint": "https://generativelanguage.googleapis.com/v1beta/models",
+      "docs_url": "https://ai.google.dev/gemini-api/docs/models",
+      "notes": "Not listed on the Gemini models page as of 2026-10-04 (no GA Pro tier; gemini-3-pro-preview is shut down). Falls forward to gemini-3.1-pro-preview. Source: https://ai.google.dev/gemini-api/docs/models",
+      "replacement_id": "gemini-3.1-pro-preview"
+    },
+    {
+      "id": "gemini-3.1-pro-preview",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3.1 Pro (preview)",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "current",
+      "released": "2026-06",
+      "best_for": [
+        "frontier reasoning"
+      ],
+      "notes": "Preview-named, released 2026-02-19, no shutdown date announced (Gemini API deprecations). Gemini 4 Argon (gemini-4-argon, GA 2026-10-13) is now the flagship."
+    },
+    {
+      "id": "gemini-3.5-flash",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3.5 Flash",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "deprecated",
+      "released": "2026-05-19",
+      "best_for": [
+        "production workloads",
+        "vision-text",
+        "image understanding",
+        "AI Mode backbone"
+      ],
+      "notes": "Deprecated 2026-10-08. The endpoint is not shutting down: API requests are routed to gemini-3.6-flash automatically and it is no longer selectable in AI Studio.",
+      "replacement_id": "gemini-3.6-flash",
+      "deprecation_date": "2026-10-08"
+    },
+    {
+      "id": "gemini-3.1-flash-lite",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3.1 Flash-Lite",
+      "tier": "fast",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "deprecated",
+      "released": "2026-05-07",
+      "notes": "Shutdown 2027-05-07 (Gemini API deprecations). Still listed Stable on the models page.",
+      "replacement_id": "gemini-3.5-flash-lite",
+      "shutdown_date": "2027-05-07"
+    },
+    {
+      "id": "gemini-omni-flash-preview",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini Omni Flash (preview)",
+      "tier": "frontier-multimodal",
+      "modality": [
+        "text",
+        "vision",
+        "audio",
+        "video"
+      ],
+      "status": "retired",
+      "released": "2026-06-30",
+      "best_for": [
+        "native multimodal: video understanding, audio + image + text in one call"
+      ],
+      "notes": "Preview. Shutdown 2026-10-22 (Gemini API deprecations). The 2026-10-04 note 'shut down 2026-09-30' is not on the page.",
+      "replacement_id": "gemini-omni-1.1-flash",
+      "shutdown_date": "2026-10-22"
+    },
+    {
+      "id": "gemini-3-pro-image",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Nano Banana Pro (Gemini 3 Pro Image)",
+      "tier": "frontier-image",
+      "modality": [
+        "image-gen",
+        "image-edit"
+      ],
+      "status": "current",
+      "released": "2026-05-28",
+      "best_for": [
+        "highest-fidelity image gen",
+        "complex compositional editing",
+        "up-to-4K output",
+        "character consistency up to 5 people",
+        "blend up to 14 input images"
+      ],
+      "notes": "GA 2026-05-28. Replaces the now-retired gemini-3-pro-image-preview (shutdown 2026-06-25). Also available globally in Google Ads + Workspace (Slides, Vids) + Vertex AI + AI Studio + Flow + NotebookLM."
+    },
+    {
+      "id": "gemini-3.1-flash-image",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Nano Banana 2 (Gemini 3.1 Flash Image)",
+      "tier": "balanced-image",
+      "modality": [
+        "image-gen",
+        "image-edit",
+        "video-to-image"
+      ],
+      "status": "deprecated",
+      "released": "2026-05-28",
+      "notes": "Deprecated 2026-10-06, no shutdown date announced (Gemini API changelog). Unique capability retained: video-to-image.",
+      "replacement_id": "gemini-nano-banana-2.1",
+      "deprecation_date": "2026-10-06"
+    },
+    {
+      "id": "gemini-2.5-flash-image",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 2.5 Flash Image",
+      "status": "deprecated",
+      "replacement_id": "gemini-3.1-flash-lite-image",
+      "notes": "Shutdown 2027-03-15 (Gemini API deprecations). The earlier note 'shut down 2026-10-02' read the RELEASE date (2025-10-02) as a shutdown date.",
+      "shutdown_date": "2027-03-15"
+    },
+    {
+      "id": "gemini-2.5-pro",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 2.5 Pro",
+      "status": "supported",
+      "released": "2025-06-17",
+      "replacement_id": "gemini-3.1-pro-preview",
+      "notes": "Not deprecated. Since 2026-09-18 access is limited to projects that used the 2.5 models before; served 'until further notice', no shutdown date announced (Gemini API deprecations, read 2026-10-27). The 2026-10-16 shutdown recorded on 2026-10-04 is not on the page. For new work use gemini-3.5-flash-lite or gemini-3.8-flash."
+    },
+    {
+      "id": "gemini-2.5-flash",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 2.5 Flash",
+      "status": "supported",
+      "released": "2025-06-17",
+      "replacement_id": "gemini-3.6-flash",
+      "notes": "Not deprecated. Since 2026-09-18 access is limited to projects that used the 2.5 models before; served 'until further notice', no shutdown date announced (Gemini API deprecations, read 2026-10-27). The 2026-10-16 shutdown recorded on 2026-10-04 is not on the page. For new work use gemini-3.5-flash-lite or gemini-3.8-flash."
+    },
+    {
+      "id": "gemini-2.5-flash-lite",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 2.5 Flash-Lite",
+      "status": "supported",
+      "released": "2025-07-22",
+      "replacement_id": "gemini-3.5-flash-lite",
+      "notes": "Not deprecated. Since 2026-09-18 access is limited to projects that used the 2.5 models before; served 'until further notice', no shutdown date announced (Gemini API deprecations, read 2026-10-27). The 2026-10-16 shutdown recorded on 2026-10-04 is not on the page. For new work use gemini-3.5-flash-lite or gemini-3.8-flash."
+    },
+    {
+      "id": "imagen-4",
+      "vendor": "google",
+      "family": "imagen",
+      "display_name": "Imagen 4",
+      "status": "retired",
+      "deprecation_date": "2026-06-15",
+      "replacement_id": "gemini-nano-banana-2.1",
+      "notes": "All Imagen 4.0 models shut down 2026-08-17. Source: https://ai.google.dev/gemini-api/docs/deprecations",
+      "shutdown_date": "2026-08-17"
+    },
+    {
+      "id": "veo-3.1-generate-preview",
+      "vendor": "google",
+      "family": "veo",
+      "display_name": "Veo 3.1 (preview)",
+      "tier": "frontier-video",
+      "modality": [
+        "video-gen"
+      ],
+      "status": "retired",
+      "released": "2026-06",
+      "best_for": [
+        "text-to-video",
+        "image-to-video"
+      ],
+      "notes": "Shut down 2026-10-22 on the Gemini API (Gemini API deprecations, read 2026-10-27). The replacement depends on the backend: gemini-omni-1.1-flash on the Gemini API, veo-3.1-generate-001 on Vertex AI (which the Gemini API does not serve). replacement_id keeps the Vertex id for readers of one id.",
+      "replacement_id": "veo-3.1-generate-001",
+      "replacement_by_backend": {
+        "gemini-api": "gemini-omni-1.1-flash",
+        "vertex": "veo-3.1-generate-001"
+      },
+      "shutdown_date": "2026-10-22"
+    },
+    {
+      "id": "veo-3.1-generate-001",
+      "vendor": "google",
+      "family": "veo",
+      "display_name": "Veo 3.1",
+      "tier": "frontier-video",
+      "modality": [
+        "video-gen"
+      ],
+      "status": "current",
+      "best_for": [
+        "text-to-video",
+        "image-to-video up to 8s"
+      ],
+      "notes": "Verified GA on Vertex AI (model versions and Veo 3.1 pages, read 2026-10-27): retirement 'November 17, 2026 or later'. Vertex AI ONLY: not served by the Gemini API. 4, 6 or 8 second clips; 9:16 and 16:9; 720p/1080p; 24 fps; up to 4 videos per prompt; text, image, first/last frame and reference-image input; extension.",
+      "released": "2025-11-17",
+      "tentative_retirement": "2026-11-17"
+    },
+    {
+      "id": "kwaivgi/kling-v3.0-pro/image-to-video",
+      "vendor": "wavespeed",
+      "family": "kling",
+      "display_name": "Kling v3.0 Pro (image-to-video)",
+      "tier": "frontier-video",
+      "modality": [
+        "video-gen"
+      ],
+      "status": "current",
+      "best_for": [
+        "5-15s social clips",
+        "best price/quality for short-form"
+      ],
+      "docs_url": "https://wavespeed.ai/models/kwaivgi/kling-v3.0-pro/image-to-video"
+    },
+    {
+      "id": "kwaivgi/kling-image-v3/text-to-image",
+      "vendor": "wavespeed",
+      "family": "kling",
+      "display_name": "Kling Image v3 (text-to-image)",
+      "tier": "balanced-image",
+      "modality": [
+        "image-gen"
+      ],
+      "status": "current"
+    },
+    {
+      "id": "higgsfield-soul-v2",
+      "vendor": "higgsfield",
+      "family": "soul",
+      "display_name": "Higgsfield Soul v2",
+      "tier": "frontier-image-character",
+      "modality": [
+        "image-gen"
+      ],
+      "status": "current",
+      "best_for": [
+        "character / face consistency",
+        "lifestyle imagery with people"
+      ],
+      "docs_url": "https://docs.higgsfield.ai/"
+    },
+    {
+      "id": "kling-video/v2.1/pro/image-to-video",
+      "vendor": "higgsfield",
+      "family": "kling",
+      "display_name": "Kling v2.1 Pro via Higgsfield (image-to-video)",
+      "tier": "balanced-video",
+      "modality": [
+        "video-gen"
+      ],
+      "status": "current",
+      "notes": "Used as a fallback path when WaveSpeed is unavailable."
+    },
+    {
+      "id": "gpt-5.2",
+      "vendor": "evolink",
+      "family": "gpt",
+      "display_name": "GPT-5.2",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-04",
+      "best_for": [
+        "frontier reasoning",
+        "complex agentic workflows",
+        "multimodal"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "docs_url": "https://docs.evolink.ai/en/api-manual/language-series/gpt-5.2/gpt-5.2-reference"
+    },
+    {
+      "id": "gpt-5.1",
+      "vendor": "evolink",
+      "family": "gpt",
+      "display_name": "GPT-5.1",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "deprecated",
+      "released": "2026-03",
+      "deprecation_date": "2026-10-01",
+      "shutdown_date": "2027-04-01",
+      "replacement_id": "gpt-6-sol",
+      "best_for": [
+        "general production workloads",
+        "cost-sensitive reasoning"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "docs_url": "https://docs.evolink.ai/en/api-manual/language-series/gpt-5-1/gpt-5-1-api",
+      "notes": "Deprecated 2026-10-01, shutdown 2027-04-01 (snapshot gpt-5.1-2025-11-13); replacement gpt-6-sol. Source: https://developers.openai.com/api/docs/deprecations (read 2026-10-27). DMP calls it through Evolink, whose GPT model list still offered gpt-5.1 and gpt-6-sol on 2026-10-27 with no notice of its own; OpenAI's shutdown is taken as Evolink's too, since Evolink resells OpenAI's model (inferred)."
+    },
+    {
+      "id": "deepseek-v4-pro",
+      "vendor": "evolink",
+      "family": "deepseek",
+      "display_name": "DeepSeek V4 Pro",
+      "tier": "frontier",
+      "modality": [
+        "text"
+      ],
+      "status": "current",
+      "released": "2026-03",
+      "context_window": 1000000,
+      "best_for": [
+        "deep reasoning",
+        "long-context analysis",
+        "code generation"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "docs_url": "https://docs.evolink.ai/en/api-manual/language-series/deepseek-v4/deepseek-v4-chat"
+    },
+    {
+      "id": "deepseek-v4-flash",
+      "vendor": "evolink",
+      "family": "deepseek",
+      "display_name": "DeepSeek V4 Flash",
+      "tier": "fast",
+      "modality": [
+        "text"
+      ],
+      "status": "current",
+      "released": "2026-03",
+      "context_window": 1000000,
+      "best_for": [
+        "high-volume classification",
+        "low-latency UX",
+        "cheap batch work"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "docs_url": "https://docs.evolink.ai/en/api-manual/language-series/deepseek-v4/deepseek-v4-chat"
+    },
+    {
+      "id": "deepseek-chat",
+      "vendor": "evolink",
+      "family": "deepseek",
+      "display_name": "DeepSeek Chat (V3)",
+      "tier": "balanced",
+      "modality": [
+        "text"
+      ],
+      "status": "current",
+      "released": "2024-12",
+      "best_for": [
+        "general conversation",
+        "content generation",
+        "translation"
+      ],
+      "replacement_id": "deepseek-v4-pro",
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "notes": "Still available; prefer deepseek-v4-pro for new work."
+    },
+    {
+      "id": "deepseek-reasoner",
+      "vendor": "evolink",
+      "family": "deepseek",
+      "display_name": "DeepSeek Reasoner (R1)",
+      "tier": "frontier",
+      "modality": [
+        "text"
+      ],
+      "status": "current",
+      "released": "2025-01",
+      "best_for": [
+        "step-by-step reasoning",
+        "math",
+        "logic puzzles",
+        "planning"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "docs_url": "https://docs.evolink.ai/en/api-manual/language-series/deepseek/deepseek-reference"
+    },
+    {
+      "id": "doubao-seed-2.0-pro",
+      "vendor": "evolink",
+      "family": "doubao",
+      "display_name": "Doubao Seed 2.0 Pro",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision",
+        "video"
+      ],
+      "status": "current",
+      "released": "2026-03",
+      "best_for": [
+        "Chinese-language marketing",
+        "multimodal understanding",
+        "video analysis"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "docs_url": "https://docs.evolink.ai/en/api-manual/language-series/doubao-seed-2.0/doubao-seed-2.0-reference"
+    },
+    {
+      "id": "doubao-seed-2.0-lite",
+      "vendor": "evolink",
+      "family": "doubao",
+      "display_name": "Doubao Seed 2.0 Lite",
+      "tier": "fast",
+      "modality": [
+        "text"
+      ],
+      "status": "current",
+      "released": "2026-03",
+      "best_for": [
+        "high-volume Chinese content",
+        "cheap translation",
+        "lightweight tasks"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions"
+    },
+    {
+      "id": "minimax-m3",
+      "vendor": "evolink",
+      "family": "minimax",
+      "display_name": "MiniMax M3",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2025-11",
+      "best_for": [
+        "competitive analysis",
+        "multimodal reasoning",
+        "balanced agentic workflows"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "docs_url": "https://docs.evolink.ai/en/api-manual/language-series/minimax-m3/minimax-m3-chat"
+    },
+    {
+      "id": "minimax-m2.5",
+      "vendor": "evolink",
+      "family": "minimax",
+      "display_name": "MiniMax M2.5",
+      "tier": "balanced",
+      "modality": [
+        "text"
+      ],
+      "status": "current",
+      "released": "2025-05",
+      "best_for": [
+        "cost-effective general workloads"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "docs_url": "https://docs.evolink.ai/en/api-manual/language-series/minimax-m2.5/minimax-m2.5-api"
+    },
+    {
+      "id": "evolink-auto",
+      "vendor": "evolink",
+      "family": "evolink",
+      "display_name": "EvoLink Auto (Smart Router)",
+      "tier": "balanced",
+      "modality": [
+        "text"
+      ],
+      "status": "current",
+      "released": "2025-10",
+      "best_for": [
+        "auto-selecting best model per request",
+        "cost optimisation across providers"
+      ],
+      "api_endpoint": "https://direct.evolink.ai/v1/chat/completions",
+      "notes": "Smart routing: the API selects the most suitable model per request. No model override via --model needed."
+    },
+    {
+      "id": "claude-fable-5",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Fable 5",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-06",
+      "context_window": 1000000,
+      "best_for": [
+        "most demanding reasoning",
+        "long-horizon agents",
+        "deep analysis"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+      "notes": "Legacy but active as of 2026-10-04 (superseded by the 5.x point release). Source: https://platform.claude.com/docs/en/docs/about-claude/models/overview",
+      "tentative_retirement": "2027-06-09"
+    },
+    {
+      "id": "claude-opus-5",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Opus 5",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-07",
+      "context_window": 1000000,
+      "best_for": [
+        "complex agentic coding",
+        "enterprise work",
+        "agentic workflows"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+      "notes": "Legacy but active as of 2026-10-04 (superseded by the 5.x point release). Source: https://platform.claude.com/docs/en/docs/about-claude/models/overview",
+      "tentative_retirement": "2027-07-24"
+    },
+    {
+      "id": "claude-sonnet-5",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Sonnet 5",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-07",
+      "context_window": 1000000,
+      "best_for": [
+        "speed + intelligence balance",
+        "high-volume content",
+        "fast agents"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://platform.claude.com/docs/en/about-claude/models/overview",
+      "notes": "Legacy but active as of 2026-10-04 (superseded by the 5.x point release). Source: https://platform.claude.com/docs/en/docs/about-claude/models/overview",
+      "tentative_retirement": "2027-06-30"
+    },
+    {
+      "id": "gpt-5.6-sol",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5.6 Sol",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-07",
+      "context_window": 1000000,
+      "best_for": [
+        "frontier reasoning",
+        "coding",
+        "agentic workflows"
+      ],
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "notes": "Superseded but not deprecated as of 2026-10-04. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gpt-5.6-terra",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5.6 Terra",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-07",
+      "context_window": 1000000,
+      "best_for": [
+        "balanced quality/cost",
+        "production workloads"
+      ],
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "notes": "Superseded but not deprecated as of 2026-10-04. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "gpt-5.6-luna",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-5.6 Luna",
+      "tier": "fast",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "released": "2026-07",
+      "context_window": 1000000,
+      "best_for": [
+        "high-volume",
+        "low-latency",
+        "cost-sensitive tasks"
+      ],
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "notes": "Superseded but not deprecated as of 2026-10-04. Source: https://developers.openai.com/api/docs/deprecations"
+    },
+    {
+      "id": "claude-opus-5-5",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Opus 5.5",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "context_window": 1000000,
+      "best_for": [
+        "complex agentic coding",
+        "enterprise work",
+        "agentic workflows"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://platform.claude.com/docs/en/docs/about-claude/models/overview",
+      "notes": "Launched 2026-09-22; Anthropic's default recommendation as of 2026-10-04. Retirement not sooner than 2027-09-22. Sampling params (temperature/top_p/top_k) rejected with HTTP 400 when non-default, as on every Claude 4.7+ model.",
+      "tentative_retirement": "2027-09-22"
+    },
+    {
+      "id": "claude-sonnet-5-5",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Sonnet 5.5",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "context_window": 1000000,
+      "best_for": [
+        "speed + intelligence balance",
+        "high-volume content",
+        "fast agents"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://platform.claude.com/docs/en/docs/about-claude/models/overview",
+      "notes": "Launched 2026-09-28. Replacement for claude-sonnet-4-5-20250929. Retirement not sooner than 2027-09-28.",
+      "tentative_retirement": "2027-09-28"
+    },
+    {
+      "id": "claude-fable-5-1",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Fable 5.1",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "context_window": 1000000,
+      "best_for": [
+        "most demanding reasoning",
+        "long-horizon agents",
+        "deep analysis"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://platform.claude.com/docs/en/docs/about-claude/models/overview",
+      "notes": "Launched 2026-09-01; top capability tier. Retirement not sooner than 2027-09-01.",
+      "tentative_retirement": "2027-09-01"
+    },
+    {
+      "id": "gpt-6-astra",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-6 Astra",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "context_window": 1050000,
+      "best_for": [
+        "frontier reasoning",
+        "coding",
+        "agentic workflows"
+      ],
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "notes": "Top text model on the OpenAI models page (2026-10-04); reasoning built in.",
+      "docs_url": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "id": "gpt-6.1-sol",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-6.1 Sol",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "context_window": 1050000,
+      "best_for": [
+        "balanced quality/cost",
+        "production workloads"
+      ],
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "notes": "Featured balanced model on the OpenAI models page (read 2026-10-27): 1.05M context, knowledge cutoff 2026-04-30. gpt-6-sol, which the deprecations page names as the replacement for gpt-5.1 and gpt-5.3-codex, is the older Sol model; it has its own model page (read 2026-10-27) and its own entry here.",
+      "docs_url": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "id": "gpt-6-sol",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-6 Sol",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "context_window": 1050000,
+      "best_for": [
+        "complex coding",
+        "agentic workflows"
+      ],
+      "replacement_id": "gpt-6.1-sol",
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "docs_url": "https://developers.openai.com/api/docs/models/gpt-6-sol",
+      "notes": "Own model page (read 2026-10-27): 'See GPT-6.1 Sol for the newer Sol model'; not on the models overview. 1.05M context, 128K max output, knowledge cutoff 2026-04-20. Not deprecated on the deprecations page (read 2026-10-27), which names it as the replacement for gpt-5.1 and gpt-5.3-codex. Function calling on Chat Completions needs reasoning_effort none; the Responses API has the full tool set. Release month not stated, so left out. For new work use gpt-6.1-sol."
+    },
+    {
+      "id": "gpt-6-luna",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-6 Luna",
+      "tier": "fast",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "context_window": 1050000,
+      "best_for": [
+        "high-volume",
+        "low-latency",
+        "cost-sensitive tasks"
+      ],
+      "api_endpoint": "https://api.openai.com/v1/chat/completions",
+      "notes": "Efficient tier on the models page (2026-10-04).",
+      "docs_url": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "id": "gpt-image-2.5-sunburst",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT Image 2.5 Sunburst",
+      "tier": "frontier-image",
+      "modality": [
+        "image-gen",
+        "image-edit"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "best_for": [
+        "text-to-image",
+        "image edits"
+      ],
+      "notes": "Most capable OpenAI image model on the models page (2026-10-04).",
+      "docs_url": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "id": "gpt-image-2.5-flare",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT Image 2.5 Flare",
+      "tier": "balanced-image",
+      "modality": [
+        "image-gen",
+        "image-edit"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "best_for": [
+        "text-to-image",
+        "image edits"
+      ],
+      "notes": "Fast OpenAI image model on the models page (2026-10-04).",
+      "docs_url": "https://developers.openai.com/api/docs/models"
+    },
+    {
+      "id": "gemini-3.8-flash",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3.8 Flash",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "best_for": [
+        "production workloads",
+        "vision-text",
+        "image understanding",
+        "AI Mode backbone"
+      ],
+      "notes": "GA 2026-09-02 (Gemini API changelog). Gemini deprecated temperature/top_p/top_k on 2026-07-21 — omit them.",
+      "docs_url": "https://ai.google.dev/gemini-api/docs/models"
+    },
+    {
+      "id": "gemini-omni-1.1-flash",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini Omni Flash 1.1",
+      "tier": "frontier-video",
+      "modality": [
+        "text",
+        "vision",
+        "audio",
+        "video",
+        "video-gen"
+      ],
+      "status": "current",
+      "released": "2026-08",
+      "best_for": [
+        "production workloads",
+        "vision-text",
+        "image understanding",
+        "AI Mode backbone"
+      ],
+      "notes": "GA 2026-08-27; Stable; no shutdown date. The Gemini API's video model (generation, editing, first/last-frame interpolation, extension, native audio, SynthID). Called with client.interactions.create(model=..., input=[...]) and base64 output_video, NOT generate_videos; the Omni model enum arrived in google-genai 2.28.0 (2026-10-02). Not wired as latest-video-google.",
+      "docs_url": "https://ai.google.dev/gemini-api/docs/models"
+    },
+    {
+      "id": "claude-haiku-5-5",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Haiku 5.5",
+      "tier": "fast",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-10-07",
+      "tentative_retirement": "2027-10-07",
+      "context_window": 1000000,
+      "best_for": [
+        "classification",
+        "extraction",
+        "routing",
+        "subagent tasks",
+        "high-volume latency-sensitive work"
+      ],
+      "api_endpoint": "https://api.anthropic.com/v1/messages",
+      "docs_url": "https://platform.claude.com/docs/en/models/haiku-5-5/overview",
+      "notes": "Released 2026-10-07. 1M context, 128K output, adaptive thinking (default effort medium). Omit temperature/top_p/top_k. Newer tokenizer (about 30% more tokens than Haiku 4.5 for the same text). Retirement not sooner than 2027-10-07."
+    },
+    {
+      "id": "claude-mythos-5-1",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Mythos 5.1",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "tentative_retirement": "2027-09-01",
+      "docs_url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "notes": "Listed Active on the deprecations page (read 2026-10-27), retirement not sooner than 2027-09-01. Not in the models-overview comparison table, so availability to a given account is UNVERIFIED: confirm access before routing to it. Omit temperature/top_p/top_k."
+    },
+    {
+      "id": "claude-mythos-5",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Mythos 5",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "supported",
+      "tentative_retirement": "2027-06-09",
+      "docs_url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "notes": "Listed Active on the deprecations page (read 2026-10-27), retirement not sooner than 2027-06-09. Availability UNVERIFIED. Superseded by claude-mythos-5-1. Omit temperature/top_p/top_k."
+    },
+    {
+      "id": "claude-mythos-preview",
+      "vendor": "anthropic",
+      "family": "claude",
+      "display_name": "Claude Mythos Preview",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "deprecated",
+      "deprecation_date": "2026-06-09",
+      "replacement_id": "claude-mythos-5-1",
+      "docs_url": "https://platform.claude.com/docs/en/about-claude/model-deprecations",
+      "notes": "Deprecated 2026-06-09; retirement date to be announced. Rejects temperature/top_p/top_k."
+    },
+    {
+      "id": "gpt-6.1-terra",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-6.1 Terra",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision"
+      ],
+      "status": "current",
+      "released": "2026-09",
+      "context_window": 1050000,
+      "best_for": [
+        "visual reasoning",
+        "precise computer use",
+        "clear natural writing",
+        "cost-efficient production"
+      ],
+      "api_endpoint": "https://api.openai.com/v1/responses",
+      "docs_url": "https://developers.openai.com/api/docs/models",
+      "notes": "On the OpenAI models page (read 2026-10-27) between GPT-6.1 Sol and GPT-6 Luna: 1.05M context, 128K max output, knowledge cutoff 2026-06-01. Release month inferred from the other GPT-6.x entries (UNVERIFIED)."
+    },
+    {
+      "id": "gpt-image-1.5",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT Image 1.5",
+      "tier": "balanced-image",
+      "modality": [
+        "image-gen",
+        "image-edit"
+      ],
+      "status": "deprecated",
+      "deprecation_date": "2026-06-02",
+      "shutdown_date": "2026-12-01",
+      "replacement_id": "gpt-image-2.5-sunburst",
+      "docs_url": "https://developers.openai.com/api/docs/deprecations",
+      "notes": "Shutdown 2026-12-01 (announced 2026-06-02; snapshot gpt-image-1.5-2025-12-16). Replacement: gpt-image-2.5-sunburst or gpt-image-2.5-flare."
+    },
+    {
+      "id": "gpt-image-1-mini",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT Image 1 Mini",
+      "tier": "balanced-image",
+      "modality": [
+        "image-gen",
+        "image-edit"
+      ],
+      "status": "deprecated",
+      "deprecation_date": "2026-06-02",
+      "shutdown_date": "2026-12-01",
+      "replacement_id": "gpt-image-2.5-flare",
+      "docs_url": "https://developers.openai.com/api/docs/deprecations",
+      "notes": "Shutdown 2026-12-01 (announced 2026-06-02). Replacement: gpt-image-2.5-sunburst or gpt-image-2.5-flare."
+    },
+    {
+      "id": "gemini-4-argon",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 4 Argon",
+      "tier": "frontier",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "current",
+      "released": "2026-10-13",
+      "context_window": 1048576,
+      "best_for": [
+        "complex coding",
+        "agentic work",
+        "math and science",
+        "long decodes up to 1M tokens"
+      ],
+      "docs_url": "https://ai.google.dev/gemini-api/docs/models/gemini-4-argon",
+      "notes": "GA 2026-10-13 (Gemini API changelog). Inputs text, image, video, audio, PDF; output text only (no image or audio generation, no Live API). Max output 65,536 (up to 1,048,576 with long decode). Thinking levels low/medium/high. No shutdown date announced. Whether it accepts temperature/top_p/top_k is UNVERIFIED: omit them."
+    },
+    {
+      "id": "gemini-3.6-flash",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3.6 Flash",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "supported",
+      "released": "2026-07-21",
+      "best_for": [
+        "general agentic and everyday tasks"
+      ],
+      "docs_url": "https://ai.google.dev/gemini-api/docs/models",
+      "notes": "Previous-generation Flash, Stable; released 2026-07-21. No shutdown date announced. gemini-3.5-flash requests are routed here."
+    },
+    {
+      "id": "gemini-3.7-flash",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3.7 Flash",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "deprecated",
+      "released": "2026-08-13",
+      "deprecation_date": "2026-10-08",
+      "replacement_id": "gemini-3.8-flash",
+      "docs_url": "https://ai.google.dev/gemini-api/docs/deprecations",
+      "notes": "Deprecated 2026-10-08. The endpoint is not shutting down: requests are routed to gemini-3.8-flash; no longer selectable in AI Studio."
+    },
+    {
+      "id": "gemini-3.5-flash-lite",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3.5 Flash-Lite",
+      "tier": "fast",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "current",
+      "released": "2026-07-21",
+      "best_for": [
+        "high-throughput execution",
+        "subagents",
+        "cheap bulk work"
+      ],
+      "docs_url": "https://ai.google.dev/gemini-api/docs/models",
+      "notes": "Stable; Google's pick (with 3.8 Flash) for new projects. No shutdown date announced. Replaces gemini-3.1-flash-lite (shutdown 2027-05-07)."
+    },
+    {
+      "id": "gemini-nano-banana-2.1",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Nano Banana 2.1",
+      "tier": "balanced-image",
+      "modality": [
+        "image-gen",
+        "image-edit"
+      ],
+      "status": "current",
+      "released": "2026-10-06",
+      "best_for": [
+        "fast high-quality image generation and editing",
+        "multi-turn character consistency",
+        "text rendering",
+        "wide and panoramic ratios (1:4, 4:1, 1:8, 8:1) at 1K/2K/4K"
+      ],
+      "docs_url": "https://ai.google.dev/gemini-api/docs/models",
+      "notes": "GA 2026-10-06. Update to Nano Banana 2 (gemini-3.1-flash-image), deprecated the same day with no shutdown date announced. No shutdown date for 2.1."
+    },
+    {
+      "id": "gemini-3.1-flash-lite-image",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Nano Banana 2 Lite",
+      "tier": "balanced-image",
+      "modality": [
+        "image-gen",
+        "image-edit"
+      ],
+      "status": "current",
+      "released": "2026-06-30",
+      "best_for": [
+        "ultra-low latency",
+        "high-volume interactive image work"
+      ],
+      "docs_url": "https://ai.google.dev/gemini-api/docs/models",
+      "notes": "Stable; released 2026-06-30. Google's recommended replacement for gemini-2.5-flash-image. No shutdown date announced."
+    },
+    {
+      "id": "gemini-3-flash-preview",
+      "vendor": "google",
+      "family": "gemini",
+      "display_name": "Gemini 3 Flash (preview)",
+      "tier": "balanced",
+      "modality": [
+        "text",
+        "vision",
+        "audio"
+      ],
+      "status": "supported",
+      "released": "2025-12-17",
+      "replacement_id": "gemini-3.6-flash",
+      "docs_url": "https://ai.google.dev/gemini-api/docs/deprecations",
+      "notes": "Preview id; no shutdown date announced; Google lists gemini-3.6-flash as the replacement."
+    },
+    {
+      "id": "veo-3.1-fast-generate-001",
+      "vendor": "google",
+      "family": "veo",
+      "display_name": "Veo 3.1 Fast",
+      "tier": "frontier-video",
+      "modality": [
+        "video-gen"
+      ],
+      "status": "supported",
+      "released": "2025-11-17",
+      "tentative_retirement": "2026-11-17",
+      "best_for": [
+        "text-to-video",
+        "image-to-video",
+        "first and last frame",
+        "video extension"
+      ],
+      "docs_url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate",
+      "notes": "Vertex AI only; GA; retirement 'November 17, 2026 or later' (Vertex model versions, read 2026-10-27). 4, 6 or 8 seconds; 9:16 and 16:9; 720p and 1080p; 24 fps."
+    },
+    {
+      "id": "veo-3.1-lite-generate-001",
+      "vendor": "google",
+      "family": "veo",
+      "display_name": "Veo 3.1 Lite (preview)",
+      "tier": "balanced-video",
+      "modality": [
+        "video-gen"
+      ],
+      "status": "supported",
+      "released": "2026-04-02",
+      "best_for": [
+        "cheap text-to-video"
+      ],
+      "docs_url": "https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/veo/3-1-generate",
+      "notes": "Vertex AI, Preview; text input only (no image input or reference images); no retirement date listed. Gemini-API id veo-3.1-lite-generate-preview shut down 2026-10-22."
+    },
+    {
+      "id": "gpt-realtime-2.1-mini",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-Realtime-2.1 mini",
+      "tier": "text-to-speech",
+      "modality": [
+        "text",
+        "audio",
+        "speech-gen"
+      ],
+      "status": "current",
+      "released": "2026-07-06",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "wss://api.openai.com/v1/realtime",
+      "docs_url": "https://developers.openai.com/api/docs/models/gpt-realtime-2.1-mini",
+      "notes": "OpenAI's named replacement for tts-1, tts-1-hd and gpt-4o-mini-tts (deprecations page and text-to-speech guide, read 2026-10-27). Realtime API only (v1/realtime): 'Not supported' on /v1/audio/speech and Chat Completions, so moving text-to-speech here is a change of API workflow, not a model swap. Input text, audio, image; output text, audio."
+    },
+    {
+      "id": "gpt-4o-mini-tts",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-4o mini TTS",
+      "tier": "text-to-speech",
+      "modality": [
+        "speech-gen"
+      ],
+      "status": "deprecated",
+      "deprecation_date": "2026-10-01",
+      "shutdown_date": "2027-01-06",
+      "replacement_id": "gpt-realtime-2.1-mini",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.openai.com/v1/audio/speech",
+      "docs_url": "https://developers.openai.com/api/docs/deprecations",
+      "notes": "Shuts down 2027-01-06 with both snapshots (gpt-4o-mini-tts-2025-03-20, -2025-12-15) and with tts-1 and tts-1-hd (announced 2026-10-01). The replacement runs on the Realtime API, not /v1/audio/speech. Supports `instructions` (tone, accent, pace) until then."
+    },
+    {
+      "id": "gpt-transcribe",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT Transcribe",
+      "tier": "speech-to-text",
+      "modality": [
+        "transcription"
+      ],
+      "status": "current",
+      "released": "2026-07-28",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.openai.com/v1/audio/transcriptions",
+      "docs_url": "https://developers.openai.com/api/docs/models/gpt-transcribe",
+      "notes": "High-accuracy speech-to-text for files and Realtime input. Endpoints: /v1/audio/transcriptions and v1/realtime/transcription_sessions; not /v1/audio/translations. gpt-live-transcribe (same release) is the low-latency streaming variant."
+    },
+    {
+      "id": "whisper-1",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "Whisper",
+      "tier": "speech-to-text",
+      "modality": [
+        "transcription"
+      ],
+      "status": "deprecated",
+      "deprecation_date": "2026-08-26",
+      "shutdown_date": "2027-02-26",
+      "replacement_id": "gpt-transcribe",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.openai.com/v1/audio/transcriptions",
+      "docs_url": "https://developers.openai.com/api/docs/deprecations",
+      "notes": "Shuts down 2027-02-26 (announced 2026-08-26); replacement gpt-transcribe or gpt-live-transcribe. /v1/audio/translations shuts down the same day."
+    },
+    {
+      "id": "gpt-4o-transcribe",
+      "vendor": "openai",
+      "family": "gpt",
+      "display_name": "GPT-4o Transcribe",
+      "tier": "speech-to-text",
+      "modality": [
+        "transcription"
+      ],
+      "status": "deprecated",
+      "deprecation_date": "2026-08-26",
+      "shutdown_date": "2027-02-26",
+      "replacement_id": "gpt-transcribe",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.openai.com/v1/audio/transcriptions",
+      "docs_url": "https://developers.openai.com/api/docs/deprecations",
+      "notes": "Shuts down 2027-02-26 (announced 2026-08-26) with gpt-4o-mini-transcribe and gpt-4o-transcribe-diarize; replacement gpt-transcribe or gpt-live-transcribe."
+    },
+    {
+      "id": "eleven_v4",
+      "vendor": "elevenlabs",
+      "family": "eleven",
+      "display_name": "Eleven v4",
+      "tier": "text-to-speech",
+      "modality": [
+        "speech-gen"
+      ],
+      "status": "current",
+      "released": "2026-09-28",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+      "docs_url": "https://elevenlabs.io/docs/overview/models",
+      "notes": "Flagship text-to-speech: 90+ languages, 10,000 characters per request. eleven_v4_turbo is the real-time variant (~100 ms median inference). Released with v4 Turbo on 2026-09-28 (changelog)."
+    },
+    {
+      "id": "eleven_multilingual_v2",
+      "vendor": "elevenlabs",
+      "family": "eleven",
+      "display_name": "Eleven Multilingual v2",
+      "tier": "text-to-speech",
+      "modality": [
+        "speech-gen"
+      ],
+      "status": "supported",
+      "replacement_id": "eleven_v4",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.elevenlabs.io/v1/text-to-speech/{voice_id}",
+      "docs_url": "https://elevenlabs.io/docs/overview/models",
+      "notes": "'Previous generation' on the models page, not deprecated, no shutdown date. 29 languages, 10,000 characters per request."
+    },
+    {
+      "id": "scribe_v2",
+      "vendor": "elevenlabs",
+      "family": "eleven",
+      "display_name": "Scribe v2",
+      "tier": "speech-to-text",
+      "modality": [
+        "transcription"
+      ],
+      "status": "current",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.elevenlabs.io/v1/speech-to-text",
+      "docs_url": "https://elevenlabs.io/docs/overview/models",
+      "notes": "Batch speech-to-text, 90+ languages. scribe_v2_realtime (~150 ms) streams; scribe_v2_medical is for clinical audio. ElevenLabs' MCP server has defaulted to scribe_v2 since 2026-08-03 (changelog); no release date found."
+    },
+    {
+      "id": "scribe_v1",
+      "vendor": "elevenlabs",
+      "family": "eleven",
+      "display_name": "Scribe v1",
+      "tier": "speech-to-text",
+      "modality": [
+        "transcription"
+      ],
+      "status": "deprecated",
+      "replacement_id": "scribe_v2",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.elevenlabs.io/v1/speech-to-text",
+      "docs_url": "https://elevenlabs.io/docs/overview/models",
+      "notes": "Listed under 'Deprecated models' with replacement scribe_v2; no shutdown date published."
+    },
+    {
+      "id": "bulbul:v3",
+      "vendor": "sarvam",
+      "family": "bulbul",
+      "display_name": "Bulbul v3",
+      "tier": "text-to-speech",
+      "modality": [
+        "speech-gen"
+      ],
+      "status": "current",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.sarvam.ai/text-to-speech",
+      "docs_url": "https://docs.sarvam.ai/api-reference-docs/text-to-speech/convert",
+      "notes": "'Stable model (API default when model is omitted)'. 11 languages; default speaker shubh; speaker names are lowercase and must match the model. Reaches end of life on Sarvam's Voice Agents on 2026-11-10 but stays on the Text-to-Speech API (changelog, 2026-10-14)."
+    },
+    {
+      "id": "bulbul:v4-flash",
+      "vendor": "sarvam",
+      "family": "bulbul",
+      "display_name": "Bulbul v4 Flash",
+      "tier": "text-to-speech",
+      "modality": [
+        "speech-gen"
+      ],
+      "status": "current",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.sarvam.ai/text-to-speech",
+      "docs_url": "https://docs.sarvam.ai/api-reference-docs/text-to-speech/convert",
+      "notes": "'Latest' on the models page: 200+ persona voices named <name>_<language>_<style> (default shubh_enhi_ads), same request and response contract as v3. No release date published (Bulbul V4 reached Voice Agents on 2026-10-06), so the alias stays on v3, the vendor's stable default."
+    },
+    {
+      "id": "saaras:v4",
+      "vendor": "sarvam",
+      "family": "saaras",
+      "display_name": "Saaras v4",
+      "tier": "speech-to-text",
+      "modality": [
+        "transcription"
+      ],
+      "status": "current",
+      "released": "2026-09-02",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.sarvam.ai/speech-to-text",
+      "docs_url": "https://docs.sarvam.ai/api-reference-docs/speech-to-text/transcribe",
+      "notes": "'Default, recommended, latest' on /speech-to-text (generally available 2026-09-02). 23 languages; modes transcribe, translate, verbatim, translit, codemix: send mode=\"transcribe\" for a plain transcript. saaras:v3 is the other accepted value."
+    },
+    {
+      "id": "saarika:v2.5",
+      "vendor": "sarvam",
+      "family": "saarika",
+      "display_name": "Saarika v2.5",
+      "tier": "speech-to-text",
+      "modality": [
+        "transcription"
+      ],
+      "status": "deprecated",
+      "replacement_id": "saaras:v4",
+      "pinned_on": "2026-10-27",
+      "pin_expires": "2027-01-25",
+      "api_endpoint": "https://api.sarvam.ai/speech-to-text",
+      "docs_url": "https://docs.sarvam.ai/api/getting-started/models/saarika",
+      "notes": "Deprecated on Sarvam's Saarika page, with no removal date. The /speech-to-text reference (read 2026-10-27) accepts only saaras:v4 and saaras:v3, so a call naming saarika may already fail. Move to saaras:v4 with mode=\"transcribe\"."
+    }
+  ],
+  "aliases": {
+    "latest-text-anthropic": "claude-opus-5-5",
+    "latest-balanced-anthropic": "claude-sonnet-5-5",
+    "latest-fast-anthropic": "claude-haiku-5-5",
+    "latest-text-openai": "gpt-6-astra",
+    "latest-balanced-openai": "gpt-6.1-sol",
+    "latest-fast-openai": "gpt-6-luna",
+    "latest-image-openai": "gpt-image-2.5-sunburst",
+    "latest-text-google": "gemini-4-argon",
+    "latest-balanced-google": "gemini-3.8-flash",
+    "latest-fast-google": "gemini-3.5-flash-lite",
+    "latest-vision-google": "gemini-3.8-flash",
+    "latest-multimodal-google": "gemini-omni-1.1-flash",
+    "latest-image-google": "gemini-3-pro-image",
+    "latest-image-balanced-google": "gemini-nano-banana-2.1",
+    "latest-image-edit-google": "gemini-3-pro-image",
+    "latest-image-photoreal-google": "gemini-3-pro-image",
+    "latest-video-google": "veo-3.1-generate-001",
+    "latest-video-gemini-api": "gemini-omni-1.1-flash",
+    "latest-video-wavespeed": "kwaivgi/kling-v3.0-pro/image-to-video",
+    "latest-image-character-higgsfield": "higgsfield-soul-v2",
+    "latest-text-evolink": "gpt-5.2",
+    "latest-balanced-evolink": "deepseek-chat",
+    "latest-fast-evolink": "deepseek-v4-flash",
+    "latest-tts-openai": "gpt-realtime-2.1-mini",
+    "latest-stt-openai": "gpt-transcribe",
+    "latest-tts-elevenlabs": "eleven_v4",
+    "latest-stt-elevenlabs": "scribe_v2",
+    "latest-tts-sarvam": "bulbul:v3",
+    "latest-stt-sarvam": "saaras:v4"
+  }
+}

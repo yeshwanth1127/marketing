@@ -1,0 +1,1065 @@
+#!/usr/bin/env python3
+"""
+connector_executor.py
+=====================
+Stdlib HTTP executor that fires the request manifests produced by
+connector_resolver.resolve_action(). Bridges the gap between
+"manifest_ready" (the orchestrator could execute) and "actually executed".
+
+Design constraints:
+  * stdlib only (urllib.request) — no requests / httpx dependency
+  * Write operations need --execute AND --approval-id. `--execute` without an id
+    builds the exact request, writes a PENDING record holding its sha256 and a
+    script-rendered preview, and exits 2. After the user types yes, the skill
+    runs `approval-manager.py --action approve`. The fire step rebuilds the
+    request and must match the hash; the record must be approved, inside its
+    window (30 min to review, 15 min to fire) and unused. It is consumed once
+    the request is sent (any HTTP status), released if nothing was sent.
+    Batches get one record with per-item hashes. --confirm is ignored.
+  * What this proves: the approval step ran for this exact request, once, in
+    its window. It cannot prove who typed yes (the model runs every command),
+    and MCP-server writes are outside it. Keep this script's --execute command
+    out of your host's command allowlist so the host asks you each time.
+  * Every execution is logged to execution-tracker (audit trail)
+  * Read operations are safe to auto-execute when --execute is passed
+  * Auth handled inline: Bearer, custom-header (Klaviyo/Brevo), Basic, query-param
+  * OAuth-only connectors (Google Ads, Meta, LinkedIn, TikTok, Gmail, GCal, GSC,
+    Twitter OAuth 1.0a) return mode="auth_required_oauth" — those need the MCP
+    path because Python cannot run an OAuth flow from a script
+  * Per-endpoint success codes are honored (Slack 200+body.ok, SendGrid 202,
+    HubSpot POST 201, Klaviyo 200, etc.)
+  * Timeouts default to 30 s; configurable
+  * Secrets are redacted from all returned output via redact_secrets().
+  * Exit status says whether anything was sent (exit_code_for): 0 sent and
+    succeeded, a local action ran, or a dry run; 1 an error, or sent and the
+    service reported failure; 2 nothing sent, an approval record is needed;
+    3 nothing sent, --execute was given but there was nothing to send (no
+    connector configured, an MCP-only connector, a missing credential, an
+    incomplete request). The JSON says why in execute_blocked_reason.
+  * Preparing a write needs the connector's credential set: the exact request,
+    auth header included (and Mailchimp's data-centre URL, read from the key),
+    is built before its hash is recorded, so a record is never approved for a
+    request that could not fire. Without it the command exits 3, writes no
+    record and says which variable to set.
+
+API:
+    execute_manifest(http_request, env=None, data=None, timeout=30) -> dict
+    execute_action(action_id, brand, *, execute=True, confirm=False,
+                   data=None, timeout=30, **kwargs) -> dict
+    list_executable_connectors() -> list[str]
+"""
+from __future__ import annotations
+
+import errno
+import json
+import os
+import re
+import socket
+import sys
+import time
+import urllib.error
+import urllib.parse
+import urllib.request
+from copy import deepcopy
+from datetime import datetime
+from pathlib import Path
+from typing import Any
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import _common  # noqa: E402
+from connector_resolver import ACTION_SPECS, KLAVIYO_REVISION, resolve_action  # type: ignore  # noqa: E402
+
+APPROVAL_BLOCKED_EXIT = 2
+NOT_EXECUTED_EXIT = 3
+
+
+def exit_code_for(result, execute: bool) -> int:
+    """The CLI exit status, so a caller chaining on `$?` knows whether anything was sent.
+
+    Before 3.35.4, `--execute` exited 0 when nothing was sent because no connector
+    was configured or the credential was missing, which reads as success.
+    """
+    if not isinstance(result, dict) or "error" in result:
+        return 1
+    if result.get("approval_required") and not result.get("execute_attempted"):
+        return APPROVAL_BLOCKED_EXIT       # 2: nothing sent; follow next_steps
+    if execute and result.get("execute_attempted") is False:
+        return NOT_EXECUTED_EXIT           # 3: nothing sent; see execute_blocked_reason
+    if result.get("execution", {}).get("success") is False or result.get("success") is False:
+        return 1
+    return 0
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Per-connector execute schema:
+#   * connector name
+#   * which env var holds the credential
+#   * which auth pattern handler to use
+#   * expected success status code(s)
+#   * post-response logic check (e.g. Slack body.ok)
+#   * which write actions are allowed (None = read-only)
+#
+# Verified against current vendor docs (May 2026 research pass) — see
+# CHANGELOG v3.7.11 for source citations per endpoint.
+# ─────────────────────────────────────────────────────────────────────────────
+
+EXECUTE_PROFILES = {
+    "slack": {
+        "env_var": "SLACK_BOT_TOKEN",
+        "auth": "bearer",
+        "auth_header": "Authorization",
+        "auth_format": "Bearer {credential}",
+        "success_codes": [200],
+        "post_check": "slack_body_ok",   # MUST verify response.body.ok = True
+        "notes": "Bot token (xoxb-...). chat:write scope required.",
+    },
+    "hubspot": {
+        "env_var": "HUBSPOT_PRIVATE_APP_TOKEN",
+        "auth": "bearer",
+        "auth_header": "Authorization",
+        "auth_format": "Bearer {credential}",
+        "success_codes": [200, 201],
+        "notes": "Private App token. Required scopes vary per endpoint "
+                 "(automation for /flows; marketing-email for /campaigns).",
+    },
+    "klaviyo": {
+        "env_var": "KLAVIYO_PRIVATE_KEY",
+        "auth": "custom_header",
+        "auth_header": "Authorization",
+        "auth_format": "Klaviyo-API-Key {credential}",
+        "success_codes": [200, 201, 202],
+        "notes": "Private API key. The revision header comes from connector_resolver.API_VERSIONS. "
+                 "PATCH ops require Content-Type: application/vnd.api+json.",
+    },
+    "sendgrid": {
+        "env_var": "SENDGRID_API_KEY",
+        "auth": "bearer",
+        "auth_header": "Authorization",
+        "auth_format": "Bearer {credential}",
+        "success_codes": [200, 202],   # mail/send returns 202
+        "notes": "API key starts with SG. — mail/send is async (202 + empty body).",
+    },
+    "brevo": {
+        "env_var": "BREVO_API_KEY",
+        "auth": "custom_header",
+        "auth_header": "api-key",
+        "auth_format": "{credential}",
+        "success_codes": [200, 201],
+        "notes": "Custom lowercase 'api-key' header, NOT Authorization Bearer.",
+    },
+    "customer-io": {
+        "env_var": "CUSTOMERIO_APP_API_KEY",
+        "auth": "bearer",
+        "auth_header": "Authorization",
+        "auth_format": "Bearer {credential}",
+        "success_codes": [200, 201],
+        "notes": "App API key, NOT Site/Track key. The /v1/send/email endpoint "
+                 "rejects Site/Track keys.",
+    },
+    "mailchimp": {
+        "env_var": "MAILCHIMP_API_KEY",
+        "auth": "basic",
+        "auth_header": "Authorization",
+        "auth_format": "anystring:{credential}",   # basic-auth user:pass form
+        "success_codes": [200],
+        "notes": "Basic auth with arbitrary username and api-key as password. "
+                 "Data-center is derived from the trailing -dcXX suffix in the key.",
+        "extra_setup": "datacenter_suffix",
+    },
+    "ahrefs": {
+        "env_var": "AHREFS_API_KEY",
+        "auth": "bearer",
+        "auth_header": "Authorization",
+        "auth_format": "Bearer {credential}",
+        "success_codes": [200],
+        "notes": "Bearer token in Authorization header (not query param). "
+                 "site-explorer endpoint is /metrics (not /overview).",
+    },
+
+    # OAuth-only connectors — execute path returns auth_required_oauth
+    "google-ads":         {"oauth_only": True, "reason": "Google Ads requires OAuth2 (API access comes from the Google Cloud project); use MCP path."},
+    "meta-marketing":     {"oauth_only": True, "reason": "Meta Marketing API requires long-lived access token from FB Login flow; use MCP path."},
+    "linkedin-marketing": {"oauth_only": True, "reason": "LinkedIn Marketing API requires OAuth2 with marketing scopes; use MCP path."},
+    "linkedin-publishing":{"oauth_only": True, "reason": "LinkedIn Publishing API requires OAuth2; use MCP path."},
+    "tiktok-ads":         {"oauth_only": True, "reason": "TikTok Business API requires OAuth2 advertiser-grant; use MCP path."},
+    "twitter-x":          {"oauth_only": True, "reason": "Twitter/X Ads + posting requires OAuth 1.0a HMAC signing; use MCP path."},
+    "gmail":              {"oauth_only": True, "reason": "Gmail API requires OAuth2 with gmail.send scope; use MCP path."},
+    "google-calendar":    {"oauth_only": True, "reason": "Google Calendar API requires OAuth2; use MCP path."},
+    "google-analytics":   {"oauth_only": True, "reason": "GA4 Admin API requires OAuth2 with analytics scopes; use MCP path."},
+    "google-search-console": {"oauth_only": True, "reason": "Google Search Console API requires OAuth2 with webmasters scope; use MCP path."},
+    "meta-graph":         {"oauth_only": True, "reason": "Meta Graph organic posting requires page-scoped OAuth token; use MCP path."},
+    "salesforce":         {"oauth_only": True, "reason": "Salesforce REST API requires OAuth2 + instance URL; use MCP path."},
+    "pipedrive":          {"oauth_only": True, "reason": "Pipedrive can use API token (simpler) — execute support TODO."},
+    "zoho-crm":           {"oauth_only": True, "reason": "Zoho CRM requires OAuth refresh flow; use MCP path."},
+    "buffer":             {"oauth_only": True, "reason": "Buffer requires OAuth2 access token; use MCP path."},
+    "hootsuite":          {"oauth_only": True, "reason": "Hootsuite requires OAuth2; use MCP path."},
+    "cision":             {"oauth_only": True, "reason": "Cision API access requires enterprise account + OAuth; use MCP path."},
+    "muckrack":           {"oauth_only": True, "reason": "Muck Rack API token works but execute support TODO."},
+    "amplitude":          {"oauth_only": True, "reason": "Amplitude HTTP API uses API key + secret — execute support TODO."},
+    "similarweb":         {"oauth_only": True, "reason": "Similarweb API uses API key in query — execute support TODO."},
+    "semrush":            {"oauth_only": True, "reason": "SEMrush uses API key in query — execute support TODO."},
+    "moz":                {"oauth_only": True, "reason": "Moz requires HMAC-SHA1 signed requests; use MCP path."},
+    "intercom":           {"oauth_only": True, "reason": "Intercom uses Bearer token — execute support TODO."},
+    "canva":              {"oauth_only": True, "reason": "Canva Connect API requires OAuth2; use MCP path."},
+    "figma":              {"oauth_only": True, "reason": "Figma requires personal access token; execute support TODO."},
+    # Official ad-platform MCP servers — reachable only as MCP tools (checked 2026-10-04).
+    "meta-ads":           {"oauth_only": True, "reason": "Meta Ads AI Connectors is a hosted MCP server with business login; use MCP path behind the typed approval gate."},
+    "google-ads-mcp":     {"oauth_only": True, "reason": "Google Ads MCP is a read-only MCP server (GAQL search); use MCP path — it cannot execute writes at all."},
+    "amazon-ads-mcp":     {"oauth_only": True, "reason": "Amazon Ads MCP Server needs partner API credentials via its MCP auth; use MCP path behind the typed approval gate."},
+}
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Template substitution
+# ─────────────────────────────────────────────────────────────────────────────
+
+_VAR_PATTERN = re.compile(r"\{([A-Z_][A-Z0-9_]*)\}")
+_DATA_PATTERN = re.compile(r"\{([a-z][a-z0-9_.]*)\}")
+
+
+def _scoped_env(env: dict, connector: str | None) -> dict:
+    """Only the connector's own variables may be substituted into a request.
+    Each executable connector's keys share its credential's vendor prefix
+    (SLACK_, HUBSPOT_, MAILCHIMP_, ...); nothing else in the environment can
+    leak into a URL, header or body through a {PLACEHOLDER}."""
+    profile = EXECUTE_PROFILES.get(connector or "", {})
+    env_var = profile.get("env_var")
+    if not env_var:
+        return {}
+    prefix = env_var.split("_", 1)[0] + "_"
+    return {k: v for k, v in env.items() if k.startswith(prefix)}
+
+
+def _substitute_env(value: Any, env: dict) -> Any:
+    """Replace {ENV_VAR_NAME} placeholders with env values. Recursive.
+    Callers pass _scoped_env(...) so only the connector's own keys resolve."""
+    if isinstance(value, str):
+        def replace(match):
+            var = match.group(1)
+            return env.get(var, match.group(0))
+        return _VAR_PATTERN.sub(replace, value)
+    if isinstance(value, dict):
+        return {k: _substitute_env(v, env) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_substitute_env(x, env) for x in value]
+    return value
+
+
+def _substitute_data(value: Any, data: dict) -> Any:
+    """Replace {data.path.to.field} placeholders. Recursive."""
+    if isinstance(value, str):
+        def replace(match):
+            path = match.group(1).split(".")
+            cur = data
+            for key in path:
+                if isinstance(cur, dict) and key in cur:
+                    cur = cur[key]
+                else:
+                    return match.group(0)
+            return str(cur) if not isinstance(cur, (dict, list)) else json.dumps(cur)
+        return _DATA_PATTERN.sub(replace, value)
+    if isinstance(value, dict):
+        return {k: _substitute_data(v, data) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_substitute_data(x, data) for x in value]
+    return value
+
+
+def _find_unresolved_placeholders(obj) -> list[str]:
+    """Return any {placeholder} strings that survived substitution."""
+    found = []
+    if isinstance(obj, str):
+        found.extend(_VAR_PATTERN.findall(obj))
+        found.extend(_DATA_PATTERN.findall(obj))
+    elif isinstance(obj, dict):
+        for v in obj.values():
+            found.extend(_find_unresolved_placeholders(v))
+    elif isinstance(obj, list):
+        for x in obj:
+            found.extend(_find_unresolved_placeholders(x))
+    return found
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Auth handlers
+# ─────────────────────────────────────────────────────────────────────────────
+
+def _build_auth_header(profile: dict, credential: str, headers: dict) -> dict:
+    """Build/inject the auth header per the connector's profile."""
+    headers = dict(headers or {})
+    auth_type = profile["auth"]
+    header_name = profile["auth_header"]
+    format_template = profile["auth_format"]
+
+    if auth_type == "bearer":
+        headers[header_name] = format_template.format(credential=credential)
+    elif auth_type == "custom_header":
+        headers[header_name] = format_template.format(credential=credential)
+    elif auth_type == "basic":
+        import base64
+        userpass = format_template.format(credential=credential)
+        encoded = base64.b64encode(userpass.encode("utf-8")).decode("ascii")
+        headers[header_name] = f"Basic {encoded}"
+    else:
+        raise ValueError(f"unknown auth type: {auth_type}")
+    return headers
+
+
+# A key goes only to its own vendor. Three connectors build their host from credential or env
+# text; each piece is validated before it goes into a URL, and the finished URL's host must end
+# with the vendor's domain, or nothing is sent. Before 3.40.0 a Mailchimp key ending
+# "-evil.example/x?" built https://evil.example/x?.api.mailchimp.com/... and sent the key there.
+VENDOR_HOSTS = {
+    "mailchimp": ".api.mailchimp.com",
+    "pipedrive": ".pipedrive.com",
+    "salesforce": ".salesforce.com",
+}
+_MAILCHIMP_DC = re.compile(r"[a-z]{2,4}[0-9]{1,3}")
+_SUBDOMAIN = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?")
+_SALESFORCE_HOST = re.compile(r"(?:[a-z0-9-]+\.)+salesforce\.com")
+
+
+class HostRefused(ValueError):
+    """A host piece or a finished URL failed the vendor check; no request was made."""
+
+
+def _salesforce_instance(value: str) -> str | None:
+    """https://<org>.my.salesforce.com, with nothing after the host, or None."""
+    try:
+        parts = urllib.parse.urlsplit(value)
+        port = parts.port
+    except ValueError:
+        return None
+    if (parts.scheme != "https" or parts.username or parts.password or port
+            or parts.path not in ("", "/") or parts.query or parts.fragment
+            or not _SALESFORCE_HOST.fullmatch(parts.hostname or "")):
+        return None
+    return "https://" + parts.hostname
+
+
+# Env variables that become part of a host: the check, and what to tell the user when it fails.
+HOST_PIECES = {
+    "MAILCHIMP_DC": (lambda v: v if _MAILCHIMP_DC.fullmatch(v) else None,
+                     "MAILCHIMP_DC must be a Mailchimp data centre such as us21"),
+    "PIPEDRIVE_COMPANY_DOMAIN": (lambda v: v if _SUBDOMAIN.fullmatch(v) else None,
+                                 "PIPEDRIVE_COMPANY_DOMAIN must be the company subdomain only, "
+                                 "such as acme for acme.pipedrive.com"),
+    "SALESFORCE_INSTANCE_URL": (_salesforce_instance,
+                                "SALESFORCE_INSTANCE_URL must be the org's https://...salesforce.com "
+                                "address, with nothing after the host"),
+}
+
+
+def _check_vendor_host(connector: str | None, url: str) -> None:
+    """Raise HostRefused unless the URL is https on the connector's own domain. The message
+    never repeats the host: for Mailchimp it was built from the key."""
+    suffix = VENDOR_HOSTS.get(connector or "")
+    if not suffix:
+        return
+    try:
+        parts = urllib.parse.urlsplit(url)
+        host = parts.hostname or ""
+    except ValueError:
+        host, parts = "", None
+    if parts is None or parts.scheme != "https" or parts.username or not host.endswith(suffix):
+        raise HostRefused(f"refusing to send: the request's host is not on {suffix.lstrip('.')}, "
+                          f"and a {connector} key goes only to {connector}. No request was sent")
+
+
+def _mailchimp_dc_url(url: str, credential: str) -> str:
+    """Mailchimp URL has a {dc} placeholder derived from key suffix.
+    Key format: '<hex>-us6' -> dc='us6'. A suffix that isn't a data centre raises HostRefused.
+    """
+    if "{dc}" not in url and "{MAILCHIMP_DC}" not in url:
+        return url
+    dc = credential.rsplit("-", 1)[-1] if "-" in credential else ""
+    if not _MAILCHIMP_DC.fullmatch(dc):
+        raise HostRefused("the Mailchimp key doesn't end in a data centre such as -us21, "
+                          "so no request was sent. Copy the whole key from Mailchimp")
+    return url.replace("{dc}", dc).replace("{MAILCHIMP_DC}", dc)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Core executor
+# ─────────────────────────────────────────────────────────────────────────────
+
+def execute_manifest(http_request: dict, env: dict | None = None,
+                     data: dict | None = None, timeout: int = 30,
+                     connector: str | None = None) -> dict:
+    """Execute a single HTTP request manifest produced by connector_resolver.
+    Returns a structured result dict — never raises on HTTP errors."""
+    built = build_request(http_request, env=env, data=data, connector=connector)
+    if built.get("status") != "built":
+        return built
+    return send_request(built, timeout=timeout)
+
+
+def build_request(http_request: dict, env: dict | None = None,
+                  data: dict | None = None, connector: str | None = None) -> dict:
+    """Resolve a manifest into the exact request that would be sent (no network).
+    The approval hash and the user-facing preview are computed from this, and
+    send_request() sends exactly this, so what was approved is what fires."""
+    if env is None:
+        env = dict(os.environ)
+    if data is None:
+        data = {}
+    if not http_request or not isinstance(http_request, dict):
+        return {"status": "error", "error": "http_request is empty or not a dict"}
+
+    # Substitute placeholders — only the connector's own variables (Hermes review)
+    spec = deepcopy(http_request)
+    scoped = _scoped_env(env, connector)
+    template_url = str(spec.get("url") or "")
+    for var, (check, message) in HOST_PIECES.items():
+        if "{" + var + "}" in template_url and var in scoped:
+            good = check(str(scoped[var]).strip())
+            if good is None:
+                return {"status": "error", "sent": False, "error": f"{message}. No request was sent",
+                        "elapsed_ms": 0}
+            scoped[var] = good
+    spec = _substitute_env(spec, scoped)
+    if data:
+        spec = _substitute_data(spec, data)
+
+    method = (spec.get("method") or "GET").upper()
+    url = spec.get("url") or ""
+    headers = spec.get("headers", {}) or {}
+    params = spec.get("params", {}) or {}
+    body_template = spec.get("body_template")
+
+    # Connector-specific URL post-processing
+    if connector == "mailchimp" and env.get("MAILCHIMP_API_KEY"):
+        try:
+            url = _mailchimp_dc_url(url, env["MAILCHIMP_API_KEY"])
+        except HostRefused as exc:
+            return {"status": "error", "sent": False, "error": str(exc), "method": method, "elapsed_ms": 0}
+
+    # Check for unresolved placeholders (missing env vars / data)
+    unresolved = _find_unresolved_placeholders({"url": url, "headers": headers,
+                                                "params": params, "body": body_template})
+    if unresolved:
+        return {
+            "status": "missing_credential",
+            "error": f"Unresolved placeholders after substitution: {sorted(set(unresolved))}",
+            "hint": "Set the missing env vars (or pass --data for body fields) "
+                    "and retry. Omit --execute to see the substituted request without firing.",
+            "method": method,
+            "url": url,
+            "elapsed_ms": 0,
+        }
+
+    # Build query string
+    if params:
+        qs = urllib.parse.urlencode([(k, str(v)) for k, v in params.items()])
+        url = url + ("&" if "?" in url else "?") + qs
+
+    # Build body
+    body_bytes = None
+    if body_template is not None and method in ("POST", "PUT", "PATCH", "DELETE"):
+        ct = headers.get("Content-Type", "").lower()
+        if "form-urlencoded" in ct:
+            body_bytes = urllib.parse.urlencode(
+                [(k, str(v)) for k, v in body_template.items()]
+            ).encode("utf-8")
+        else:
+            body_bytes = json.dumps(body_template).encode("utf-8")
+
+    try:
+        _check_vendor_host(connector, url)
+    except HostRefused as exc:
+        return {"status": "error", "sent": False, "error": str(exc), "method": method, "elapsed_ms": 0}
+
+    return {"status": "built", "method": method, "url": url, "headers": headers,
+            "body_bytes": body_bytes, "body": body_template}
+
+
+def _proves_nothing_sent(exc: BaseException) -> bool:
+    """True only for errors that prove no connection was made, so the platform
+    cannot have seen the request: connection refused, a DNS failure, or a proxy
+    refusing the tunnel. A timeout or reset can happen after the request was
+    written (or after the status line arrived), so it proves nothing."""
+    reason = exc.reason if isinstance(exc, urllib.error.URLError) else exc
+    if isinstance(reason, (ConnectionRefusedError, socket.gaierror)):
+        return True
+    if isinstance(reason, OSError) and (reason.errno == errno.ECONNREFUSED
+                                        or getattr(reason, "winerror", None) == 10061):
+        return True
+    # A timeout (socket.timeout / TimeoutError, raised at connect time or while the body
+    # is being written) proves nothing, so it never releases a record.
+    return isinstance(reason, (OSError, str)) and "Tunnel connection failed" in str(reason)
+
+
+def send_request(built: dict, timeout: int = 30) -> dict:
+    """Send a request produced by build_request(). Never raises.
+
+    Every result carries `sent`. `sent: False` (status network_error) is returned
+    only when the error proves no connection was made, and only then may an approval
+    record be released. Any other failure (a timeout or reset while writing the request,
+    waiting for the status or reading the body) is status unknown_outcome with
+    `sent: True`: the platform may have acted, so the record is consumed and the result
+    keeps http_status when the status line had arrived. Before 3.35.4 a timeout after
+    delivery released the record, so one approval could fire twice."""
+    method, url, headers, body_bytes = built["method"], built["url"], built["headers"], built["body_bytes"]
+    started = time.time()
+    req = urllib.request.Request(url, data=body_bytes, method=method)
+    for h, v in headers.items():
+        # Unredirected: urllib copies ordinary headers to whatever host a redirect names, and the
+        # key is in them. These stay on the request the vendor was meant to get.
+        req.add_unredirected_header(h, str(v))
+
+    # Fire
+    response = None
+    status_code = None
+    try:
+        response = urllib.request.urlopen(req, timeout=timeout)
+        status_code = response.status
+        raw = response.read()
+    except urllib.error.HTTPError as e:
+        status_code = e.code
+        try:
+            raw = e.read()
+        except Exception:
+            raw = b""
+    except Exception as e:  # URLError, timeouts, resets, protocol errors
+        failed = {
+            "error": f"{type(e).__name__}: {getattr(e, 'reason', e)}",
+            "method": method,
+            "url": url,
+            "elapsed_ms": int((time.time() - started) * 1000),
+        }
+        if status_code is None and _proves_nothing_sent(e):
+            return {"status": "network_error", "sent": False, **failed}
+        failed.update({
+            "status": "unknown_outcome",
+            "sent": True,
+            "outcome": "unknown: the request may have reached the platform; check it there before preparing again",
+        })
+        if status_code is not None:
+            failed["http_status"] = status_code
+        return failed
+    finally:
+        if response is not None:
+            try:
+                response.close()
+            except Exception:
+                pass
+
+    # Parse response body
+    parsed_body: Any = None
+    try:
+        parsed_body = json.loads(raw.decode("utf-8")) if raw else None
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        parsed_body = raw.decode("utf-8", errors="replace")[:1000] if raw else None
+
+    elapsed_ms = int((time.time() - started) * 1000)
+
+    return {
+        "status": "executed",
+        "sent": True,
+        "http_status": status_code,
+        "method": method,
+        "url": url,
+        "response_body": parsed_body,
+        "elapsed_ms": elapsed_ms,
+        "request_summary": {
+            "method": method,
+            "url_host": urllib.parse.urlparse(url).netloc,
+            "auth_header_present": any(h.lower() in ("authorization", "api-key")
+                                       for h in headers.keys()),
+            "body_bytes": len(body_bytes) if body_bytes else 0,
+        },
+    }
+
+
+def _check_success(result: dict, profile: dict) -> dict:
+    """Apply per-connector success-code + post-check logic. Anything that did not
+    complete (network_error, unknown_outcome, error) is not a success."""
+    if result.get("status") != "executed":
+        result["success"] = False
+        return result
+    success_codes = profile.get("success_codes", [200, 201, 202])
+    http_status = result.get("http_status")
+
+    is_success = http_status in success_codes
+
+    # Slack returns 200 even on logical failure; verify body.ok
+    if profile.get("post_check") == "slack_body_ok":
+        body = result.get("response_body")
+        if isinstance(body, dict):
+            slack_ok = bool(body.get("ok"))
+            result["slack_ok_check"] = slack_ok
+            if is_success and not slack_ok:
+                is_success = False
+                result["slack_error"] = body.get("error")
+
+    result["success"] = is_success
+    return result
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Secret redaction (applied to ALL returned output)
+# ─────────────────────────────────────────────────────────────────────────────
+
+_SECRET_QS = re.compile(
+    r"(?i)\b(access_token|refresh_token|token|api[_-]?key|apikey|key|secret|"
+    r"password|developer-token|auth)=[^&\s\"']+")
+_BEARER = re.compile(r"(?i)(Bearer|Basic)\s+[A-Za-z0-9._\-+/=]+")
+
+
+def _redact_str(s: str) -> str:
+    s = _SECRET_QS.sub(lambda m: f"{m.group(1)}=REDACTED", s)
+    s = _BEARER.sub(lambda m: f"{m.group(1)} REDACTED", s)
+    return s
+
+
+def redact_secrets(obj):
+    """Recursively redact secret-looking tokens from executor output so a
+    partially-substituted URL / header (e.g. the missing_credential branch that
+    echoes the substituted request) never leaks a live credential."""
+    if isinstance(obj, str):
+        return _redact_str(obj)
+    if isinstance(obj, dict):
+        return {k: redact_secrets(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [redact_secrets(v) for v in obj]
+    return obj
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Action-level executor (resolves THEN executes)
+# ─────────────────────────────────────────────────────────────────────────────
+
+def execute_action(action_id: str, brand: str, *,
+                   execute: bool = True, confirm: bool = False,
+                   data: dict | None = None, timeout: int = 30,
+                   log_to_tracker: bool = True, env: dict | None = None,
+                   approval_id: str | None = None,
+                   **kwargs) -> dict:
+    """Resolve an action and either execute it or return the manifest.
+
+    Args:
+      action_id:     one of ACTION_SPECS keys
+      brand:         brand slug
+      execute:       if False, returns the resolver response unchanged (no execution)
+      confirm:       ignored (kept so old calls still parse); writes need approval_id
+      approval_id:   for operation=='write': an approved, unexpired, unused record
+                     whose payload hash matches this exact request. Without it a
+                     write prepares a pending record and returns its preview.
+      data:          domain data for body_template substitution (e.g.
+                     {"plan": {"campaign_name": "X"}})
+      timeout:       HTTP timeout seconds
+      log_to_tracker: append execution to execution-tracker.py audit trail
+      env:           env-var dict; defaults to os.environ
+      **kwargs:      passed through to resolve_action
+    """
+    if env is None:
+        env = dict(os.environ)
+
+    # Step 1: resolve — with no side effects (local actions run only under execute)
+    resolved = resolve_action(action_id, brand, run_local=False, **kwargs)
+    resolved_mode = resolved.get("mode")
+
+    if not execute:
+        return resolved
+
+    if resolved_mode == "local_ready":
+        # Local-only action (writes a local config, sends nothing): run it now.
+        local = resolve_action(action_id, brand, run_local=True, **kwargs)
+        local["execute_attempted"] = True
+        return local
+
+    if resolved_mode == "stub_unconfigured":
+        # No connector configured — execute mode can't help
+        resolved["execute_attempted"] = False
+        resolved["execute_blocked_reason"] = "no connector configured; nothing to execute"
+        return resolved
+
+    if resolved_mode != "manifest_ready":
+        resolved["execute_attempted"] = False
+        resolved["execute_blocked_reason"] = f"unknown mode: {resolved_mode}"
+        return resolved
+
+    # Step 2: structural checks (nothing is sent by any of these)
+    spec = ACTION_SPECS.get(action_id, {})
+    operation = spec.get("operation", "read")
+    chosen = resolved.get("chosen_connector")
+    profile = EXECUTE_PROFILES.get(chosen, {})
+    if profile.get("oauth_only"):
+        resolved["execute_attempted"] = False
+        resolved["execute_blocked_reason"] = profile.get("reason", "OAuth-only connector")
+        resolved["alternative"] = (
+            f"Execute via the {chosen} MCP tool, behind the skill's typed `yes` and your host's "
+            f"permission prompt. MCP writes are outside this executor's approval-record check. "
+            f"The manifest above is the exact request shape the MCP will send."
+        )
+        return resolved
+    if not profile:
+        resolved["execute_attempted"] = False
+        resolved["execute_blocked_reason"] = (
+            f"no execute profile defined for connector '{chosen}'; "
+            f"action can only be executed via the MCP path."
+        )
+        return resolved
+
+    env_var = profile.get("env_var")
+    credential = env.get(env_var) if env_var else None
+    if not credential:
+        resolved["execute_attempted"] = False
+        resolved["execute_blocked_reason"] = f"env var {env_var} is not set"
+        resolved["setup_hint_credential"] = (
+            f"Set {env_var} with the {chosen} credential and retry. "
+            f"Notes: {profile.get('notes', '')}"
+        )
+        return resolved
+
+    # Step 3: build the exact request (auth injected, data substituted, no network)
+    built = _build_for_action(resolved, profile, credential, env, data, chosen)
+    if built.get("status") != "built":
+        resolved["execute_attempted"] = False
+        resolved["execution"] = built
+        return resolved
+    description = request_description(built, brand=brand, connector=chosen, action=action_id,
+                                      credential_env=env_var, credential=credential, profile=profile)
+    payload_hash = _common.action_payload_hash(description)
+
+    # Step 4: the approval-record gate for writes
+    approval_path = approval_record = approval_item = None
+    if operation == "write":
+        if not approval_id:
+            new_id, _ = _common.write_approval_record(brand, "exec", {
+                "kind": "single", "type": "execute-action", "brand": brand, "platform": chosen,
+                "action": action_id, "credential_env": env_var, "payload_hash": payload_hash,
+                "preview": description, "content_summary": f"{action_id} via {chosen}",
+            })
+            resolved.update({
+                "execute_attempted": False,
+                "approval_required": True,
+                "approval_id": new_id,
+                "approval_payload_hash": payload_hash,
+                "preview": description,
+                "next_steps": _next_steps(brand, new_id),
+            })
+            return resolved
+        approval_path, approval_record, approval_item, why = _common.load_approval_for_execution(
+            brand, approval_id, payload_hash, connector=chosen, action=action_id)
+        if why:
+            resolved.update({
+                "execute_attempted": False,
+                "approval_required": True,
+                "execute_blocked_reason": why,
+                "approval_payload_hash": payload_hash,
+                "preview": description,
+                "next_steps": ["Re-run this command WITHOUT --approval-id to prepare a fresh record for "
+                               "this exact request, show its preview to the user, and continue only "
+                               "after they type yes."],
+            })
+            return resolved
+        _common.mark_approval_in_flight(approval_path, approval_record, approval_item)
+
+    # Step 5: send exactly what was built (and, for writes, approved)
+    exec_result = _check_success(send_request(built, timeout=timeout), profile)
+    resolved["execute_attempted"] = True
+    resolved["execution"] = exec_result
+    if approval_path is not None:
+        # Released only when send_request proved nothing reached the platform.
+        sent = exec_result.get("sent") is not False
+        unknown = exec_result.get("status") == "unknown_outcome"
+        _common.settle_approval(approval_path, approval_record, approval_item, sent=sent,
+                                success=bool(exec_result.get("success")), request_hash=payload_hash,
+                                summary=(exec_result.get("outcome") if unknown else None)
+                                or exec_result.get("http_status") or exec_result.get("error"),
+                                outcome="unknown" if unknown else None)
+        resolved["approval"] = {"approval_id": approval_id, "payload_hash": payload_hash,
+                                "consumed": sent, "status": approval_record.get("status")}
+
+    # Step 6: audit log, with a full copy of the approval record used
+    if log_to_tracker:
+        _log_execution(action_id, brand, chosen, exec_result, operation,
+                       payload_hash=payload_hash, approval_record=approval_record)
+
+    return resolved
+
+
+def _build_for_action(resolved, profile, credential, env, data, chosen) -> dict:
+    manifest = resolved.get("manifest", {})
+    http_request = deepcopy(manifest.get("http_request") or {})
+    http_request["headers"] = _build_auth_header(profile, credential, http_request.get("headers", {}))
+    return build_request(http_request, env=env, data=data, connector=chosen)
+
+
+def request_description(built: dict, *, brand: str, connector: str, action: str, credential_env: str,
+                        credential: str, profile: dict) -> dict:
+    """The fully resolved request, as hashed and as shown to the user: the
+    credential's NAME is included, its value never is."""
+    auth_header = (profile.get("auth_header") or "").lower()
+
+    def scrub(value):
+        if isinstance(value, str):
+            return value.replace(credential, "<" + credential_env + ">") if credential else value
+        if isinstance(value, dict):
+            return {k: scrub(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [scrub(v) for v in value]
+        return value
+
+    headers = {k: scrub(str(v)) for k, v in (built.get("headers") or {}).items()
+               if k.lower() != auth_header and k.lower() not in ("authorization", "api-key")}
+    return {
+        "brand": brand,
+        "connector": connector,
+        "action": action,
+        "credential_env": credential_env,
+        "method": built.get("method"),
+        "url": scrub(built.get("url")),
+        "headers": headers,
+        "body": scrub(built.get("body")),
+    }
+
+
+def _next_steps(brand: str, approval_id: str) -> list:
+    return [
+        "Show the user the `preview` above exactly as printed (it is the request that will be sent).",
+        "Only after the user types yes: python \"${CLAUDE_PLUGIN_ROOT}/scripts/approval-manager.py\" "
+        f"--brand {brand} --action approve --id {approval_id}",
+        f"Then re-run this same command with --approval-id {approval_id} (within "
+        f"{_common.APPROVAL_FIRE_MINUTES} minutes of approving). The record is single-use.",
+    ]
+
+
+def prepare_batch(brand: str, items: list, *, env: dict | None = None, timeout: int = 30) -> dict:
+    """One approval record for an ordered batch of writes, with an itemised
+    preview built from each fully resolved request. Each item is fired later
+    with the same --approval-id and is consumed on its own; a changed item fails
+    alone."""
+    if env is None:
+        env = dict(os.environ)
+    prepared, problems = [], []
+    for i, item in enumerate(items):
+        action_id = item.get("action")
+        kwargs = {k: v for k, v in item.items() if k not in ("action", "data") and v is not None}
+        resolved = resolve_action(action_id, brand, run_local=False, **kwargs)
+        chosen = resolved.get("chosen_connector")
+        profile = EXECUTE_PROFILES.get(chosen, {})
+        if resolved.get("mode") != "manifest_ready" or profile.get("oauth_only") or not profile:
+            problems.append({"index": i, "action": action_id, "reason": resolved.get("mode") or "not executable here"})
+            continue
+        credential = env.get(profile.get("env_var") or "")
+        if not credential:
+            problems.append({"index": i, "action": action_id, "reason": f"env var {profile.get('env_var')} is not set"})
+            continue
+        built = _build_for_action(resolved, profile, credential, env, item.get("data"), chosen)
+        if built.get("status") != "built":
+            problems.append({"index": i, "action": action_id, "reason": built.get("error")})
+            continue
+        description = request_description(built, brand=brand, connector=chosen, action=action_id,
+                                          credential_env=profile.get("env_var"), credential=credential,
+                                          profile=profile)
+        prepared.append({"index": i, "action": action_id, "connector": chosen,
+                         "payload_hash": _common.action_payload_hash(description), "preview": description})
+    if problems:
+        return {"status": "error", "error": "some batch items cannot be prepared; nothing was recorded",
+                "problems": problems}
+    approval_id, _ = _common.write_approval_record(brand, "batch", {
+        "kind": "batch", "type": "execute-action", "brand": brand, "items": prepared,
+        "content_summary": f"batch of {len(prepared)} writes",
+    })
+    return {"status": "prepared", "approval_id": approval_id, "items": prepared,
+            "approval_required": True, "next_steps": _next_steps(brand, approval_id)}
+
+
+def _log_execution(action_id: str, brand: str, connector: str,
+                   exec_result: dict, operation: str, *, payload_hash: str | None = None,
+                   approval_record: dict | None = None):
+    """Append an entry to brands/{brand}/executions/. Writes carry a full copy of
+    the approval record that let them fire, so a forged record is visible later."""
+    brand_dir = _common.brand_dir(brand)
+    if not brand_dir.exists():
+        return  # don't fail just because brand doesn't exist
+    executions_dir = brand_dir / "executions"
+    executions_dir.mkdir(exist_ok=True)
+    ts = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
+    exec_id = f"exec-{connector}-{action_id}-{ts}"
+    success = exec_result.get("success") or (exec_result.get("http_status") in (200, 201, 202)
+                                             and exec_result.get("status") == "executed")
+    entry = {
+        "execution_id": exec_id,
+        "action": action_id,
+        "platform": connector,
+        "operation": operation,
+        "action_type": f"{action_id}-via-{connector}",
+        "result": ("unknown" if exec_result.get("status") == "unknown_outcome"
+                   else "success" if success else "failure"),
+        "http_status": exec_result.get("http_status"),
+        "elapsed_ms": exec_result.get("elapsed_ms"),
+        "executed_at": datetime.now().isoformat(),
+        "error": exec_result.get("error") or exec_result.get("slack_error"),
+        "payload_hash": payload_hash,
+        "approval_record": deepcopy(approval_record) if approval_record else None,
+    }
+    try:
+        (executions_dir / f"{exec_id}.json").write_text(json.dumps(entry, indent=2, default=str), encoding="utf-8")  # path-safe: connector and action ids are registry names (resolve_action), plus a timestamp
+    except Exception:
+        pass  # logging never breaks the call
+
+
+# One harmless read per connector: proof that the key works, after connect. GET only, no body, no
+# write endpoint, and nothing but the HTTP status and a count leaves the call.
+PROBES = {
+    "slack": "https://slack.com/api/auth.test",
+    "hubspot": "https://api.hubapi.com/crm/v3/objects/contacts?limit=1",
+    "klaviyo": "https://a.klaviyo.com/api/accounts/",
+    "sendgrid": "https://api.sendgrid.com/v3/scopes",
+    "brevo": "https://api.brevo.com/v3/account",
+    "customer-io": "https://api.customer.io/v1/campaigns",
+    "mailchimp": "https://{dc}.api.mailchimp.com/3.0/ping",
+    "ahrefs": "https://api.ahrefs.com/v3/subscription-info/limits-and-usage",
+}
+
+
+def probe(connector: str, env: dict | None = None, timeout: int = 15, urlopen=None) -> dict:
+    """One read-only GET that proves a connector's key works. Never writes, never raises.
+
+    A connector reached through the host's MCP connection or OAuth (Google Ads, Meta, LinkedIn,
+    TikTok and the rest of the manifest-ready catalog) can't be probed from code: the result says
+    so instead of claiming it is connected."""
+    env = dict(os.environ) if env is None else env
+    profile = EXECUTE_PROFILES.get(connector)
+    if profile is None:
+        return {"connector": connector, "status": "unknown", "error": f"no such connector: {connector}"}
+    if profile.get("oauth_only") or connector not in PROBES:
+        return {"connector": connector, "status": "not_probeable",
+                "message": "This connector runs through the host's MCP connection or OAuth, so code can't test it. "
+                           "Check it in the host's connector settings (for example, run one read in the MCP tool)."}
+    credential = env.get(profile["env_var"], "")
+    if not credential:
+        return {"connector": connector, "status": "not_configured", "message": f"{profile['env_var']} is not set"}
+    try:
+        url = _mailchimp_dc_url(PROBES[connector], credential)
+        _check_vendor_host(connector, url)
+    except HostRefused as exc:
+        return {"connector": connector, "status": "failed", "sent": False, "message": str(exc)}
+    headers = _build_auth_header(profile, credential, {"Accept": "application/json"})
+    if connector == "klaviyo":
+        headers["revision"] = KLAVIYO_REVISION
+    req = urllib.request.Request(url, method="GET")
+    for h, v in headers.items():
+        req.add_unredirected_header(h, v)  # never copied to a redirect's host
+    try:
+        with (urlopen or urllib.request.urlopen)(req, timeout=timeout) as resp:
+            status, raw = resp.status, resp.read()
+    except urllib.error.HTTPError as exc:
+        return {"connector": connector, "status": "failed", "http_status": exc.code,
+                "message": "The key was refused or lacks the read scope this probe needs" if exc.code in (401, 403)
+                else f"HTTP {exc.code}"}
+    except (urllib.error.URLError, OSError, ValueError) as exc:
+        return {"connector": connector, "status": "failed", "message": f"no answer: {type(exc).__name__}"}
+    try:
+        body = json.loads(raw or b"{}")
+    except ValueError:
+        body = {}
+    if connector == "slack" and isinstance(body, dict) and not body.get("ok"):
+        return {"connector": connector, "status": "failed", "http_status": status, "message": "Slack answered ok: false"}
+    items = next((len(v) for v in (body.values() if isinstance(body, dict) else []) if isinstance(v, list)), None)
+    return {"connector": connector, "status": "ok", "http_status": status, "read": url.split("?")[0],
+            **({"items_returned": items} if items is not None else {})}
+
+
+def list_executable_connectors() -> list[str]:
+    """Names of connectors with execute profiles (excludes oauth_only)."""
+    return sorted(name for name, p in EXECUTE_PROFILES.items()
+                  if not p.get("oauth_only"))
+
+
+def list_oauth_only_connectors() -> list[str]:
+    """Names of connectors that require the MCP path."""
+    return sorted(name for name, p in EXECUTE_PROFILES.items()
+                  if p.get("oauth_only"))
+
+
+if __name__ == "__main__":
+    import argparse
+    if hasattr(sys.stdout, "reconfigure"):
+        try:
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        except Exception:
+            pass
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    # --action / --brand are NOT required: the --list-* flags must be reachable
+    # without them (M1). Requiredness is enforced below only for execution.
+    parser.add_argument("--action", help="action_id to execute")
+    parser.add_argument("--brand", type=_common.path_component)
+    parser.add_argument("--execute", action="store_true",
+                        help="actually fire the request (default: dry-run / resolve only)")
+    parser.add_argument("--confirm", action="store_true",
+                        help="Ignored. Writes need --approval-id (see --help epilog / execute-action.md).")
+    parser.add_argument("--approval-id",
+                        help="Approved, unexpired, unused approval record for this exact write "
+                             "(omit it once to prepare one and get its preview)")
+    parser.add_argument("--prepare-batch", metavar="PLAN_JSON",
+                        help="Prepare ONE approval record for a list of writes: "
+                             '[{"action": "...", "data": {...}, "channel": "..."}, ...]')
+    parser.add_argument("--data", help="JSON dict for body_template substitution")
+    parser.add_argument("--channel", help="channel (for inventory/automations/cadence)")
+    parser.add_argument("--automation-id", help="for enable-automation")
+    parser.add_argument("--plan", help="path to plan JSON")
+    parser.add_argument("--timeout", type=int, default=30)
+    parser.add_argument("--list-executable", action="store_true",
+                        help="List connectors with execute profiles")
+    parser.add_argument("--list-oauth-only", action="store_true",
+                        help="List connectors that require the MCP path")
+    args = parser.parse_args()
+
+    if args.list_executable:
+        print(json.dumps({"executable_connectors": list_executable_connectors()}, indent=2))
+        sys.exit(0)
+    if args.list_oauth_only:
+        print(json.dumps({"oauth_only_connectors": list_oauth_only_connectors()}, indent=2))
+        sys.exit(0)
+
+    if args.prepare_batch:
+        if not args.brand:
+            print(json.dumps({"error": "--brand is required with --prepare-batch"}, indent=2))
+            sys.exit(1)
+        try:
+            items = json.loads(Path(args.prepare_batch).read_text(encoding="utf-8-sig"))
+            assert isinstance(items, list) and items
+        except Exception as exc:
+            print(json.dumps({"error": f"--prepare-batch needs a JSON list of items: {exc}"}, indent=2))
+            sys.exit(1)
+        batch = redact_secrets(prepare_batch(args.brand, items, timeout=args.timeout))
+        print(json.dumps(batch, indent=2, default=str))
+        sys.exit(APPROVAL_BLOCKED_EXIT if batch.get("status") == "prepared" else 1)
+
+    # For an actual execution, --action and --brand are required.
+    if not args.action or not args.brand:
+        print(json.dumps({"error": "--action and --brand are required (unless using "
+                                   "--list-executable / --list-oauth-only)"}, indent=2))
+        sys.exit(1)
+
+    # Guard the JSON parse so a malformed --data reports cleanly instead of
+    # crashing with an uncaught traceback (M1).
+    try:
+        data = json.loads(args.data) if args.data else None
+    except json.JSONDecodeError as exc:
+        print(json.dumps({"error": f"invalid JSON in --data: {exc}"}, indent=2))
+        sys.exit(1)
+
+    extra_kwargs = {}
+    if args.channel:
+        extra_kwargs["channel"] = args.channel
+    if args.automation_id:
+        extra_kwargs["automation_id"] = args.automation_id
+    if args.plan:
+        extra_kwargs["plan_path"] = args.plan
+
+    result = execute_action(args.action, args.brand,
+                            execute=args.execute, confirm=args.confirm,
+                            data=data, timeout=args.timeout,
+                            approval_id=args.approval_id, **extra_kwargs)
+    # Redact any secrets that may have leaked into the output (e.g. a
+    # substituted URL echoed by the missing_credential branch), then exit with a
+    # status that says whether anything was sent (exit_code_for) so $? is trustworthy.
+    result = redact_secrets(result)
+    print(json.dumps(result, indent=2, default=str))
+    sys.exit(exit_code_for(result, args.execute))

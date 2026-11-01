@@ -42,3 +42,29 @@ test('Editing a caption re-runs the caption tools with fresh receipts',async()=>
  assert.ok(r.data.data.receipts.length>0);assert.notDeepEqual(r.data.data.receipts,asset.data.receipts);
  assert.ok(r.data.data.checks.some(c=>c.source==='ig-human/detect.py'||c.source==='ig-caption/caption.py'));
 });
+
+test('DMP quality gate and claim verifier run with a DMP-format brand profile (golden)',async()=>{
+ const g=await action({action:'generate',module:'05-content',provider:'local_template',brief:'Family dental care'});
+ const a=g.data.records[0];
+ assert.ok(a.data.quality_gate&&!a.data.quality_gate.error,JSON.stringify(a.data.quality_gate));
+ assert.ok(['PASS','WARN','FAIL'].includes(a.data.quality_gate.decision));
+ assert.ok(a.data.claim_check&&!a.data.claim_check.error,JSON.stringify(a.data.claim_check));
+ const rows=(await q('SELECT skill,script,vendor_match,exit_code FROM tool_runs WHERE id=ANY($1::uuid[])',[a.data.receipts])).rows;
+ for(const s of ['eval-runner.py','claim-verifier.py']){const row=rows.find(r=>r.script===s);assert.ok(row,s);assert.equal(row.exit_code,0);assert.equal(row.vendor_match,true);}
+});
+
+test('Unproven claims are flagged by claim-verifier; recorded evidence verifies them',async()=>{
+ const brand=(await q("SELECT * FROM records WHERE client_id=$1 AND kind='BrandKit' ORDER BY created_at DESC LIMIT 1",[client])).rows[0];
+ const draft={...asset.data,script:'[0-3s] Rated 4.9 by 1,200 families. 50% fewer cavities with twice-yearly visits.',caption:'Rated 4.9 by 1,200 families.'};
+ let r=await action({action:'save-record',kind:'Asset',title:'Claims test',data:draft});assert.equal(r.status,200,JSON.stringify(r.data));
+ assert.ok(r.data.data.checks.some(c=>c.source==='verify-claims/claim-verifier.py'&&/needs evidence/.test(c.message)));
+ const s=await action({action:'save-record',id:brand.id,kind:'BrandKit',title:brand.title,data:{...brand.data,evidence:[{claim:'Rated 4.9 by 1,200 families',source:'Google reviews export',date:'2026-10-31',verified:true},{claim:'50% fewer cavities with twice-yearly visits',source:'Clinic audit 2026',date:'2026-09-30',verified:true}]}});assert.equal(s.status,200,JSON.stringify(s.data));
+ r=await action({action:'save-record',kind:'Asset',title:'Claims test 2',data:draft});
+ // Golden: same text + same evidence through the vendor script directly must give the same result.
+ const fs=await import('node:fs');const os=await import('node:os');const dir=fs.mkdtempSync(path.join(os.tmpdir(),'gold-'));
+ fs.writeFileSync(path.join(dir,'c.txt'),[draft.script,draft.caption].join('\n\n'));
+ fs.writeFileSync(path.join(dir,'e.json'),JSON.stringify({evidence:[{claim:'Rated 4.9 by 1,200 families',source:'Google reviews export',date:'2026-10-31',verified:true},{claim:'50% fewer cavities with twice-yearly visits',source:'Clinic audit 2026',date:'2026-09-30',verified:true}]}));
+ const exp=vendor('digital-marketing-pro/scripts/claim-verifier.py','',['--action','verify','--file',path.join(dir,'c.txt'),'--evidence',path.join(dir,'e.json')]);
+ assert.deepEqual(r.data.data.claim_check.summary,exp.summary);
+ assert.equal(r.data.data.claim_check.score,exp.verification_score);
+});

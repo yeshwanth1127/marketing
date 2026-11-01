@@ -24,3 +24,20 @@ scripts:
     args: ["-", "--json"]
     input: reel script on stdin
     output: json
+  - id: quality-gate
+    skill: check
+    scripts: dmp          # DMP shared scripts folder; brand profile prepared by core/tools/dmp.mjs
+    file: eval-runner.py
+    mode: direct
+    args: ["--action", "run-full", "--file", "{input_file}", "--brand", "{brand}", "--evidence", "{evidence_file}"]
+    input: script + caption
+    output: json
+    timeout_ms: 90000
+  - id: claim-check
+    skill: verify-claims
+    scripts: dmp
+    file: claim-verifier.py
+    mode: direct
+    args: ["--action", "verify", "--file", "{input_file}", "--evidence", "{evidence_file}"]
+    input: script + caption
+    output: json
