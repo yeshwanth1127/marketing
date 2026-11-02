@@ -400,3 +400,7 @@ select[multiple]{background-image:none;min-height:90px}
 .danger-notice{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 30%,transparent);color:var(--bad)}
 .danger-notice p{color:var(--ink,#333)}
 .delete-list{margin:4px 0 0 18px;display:grid;gap:6px;font-size:14px}
+
+.logo-picker{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.logo-picker img{height:56px;max-width:160px;object-fit:contain;border:1px solid var(--line,#e5e5e5);border-radius:8px;padding:6px;background:#fff}
+.logo-picker select{min-width:180px}

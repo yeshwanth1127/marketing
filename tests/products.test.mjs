@@ -110,3 +110,17 @@ test('deleting the company deletes every brand and product under it',async()=>{
  const left=(await q('SELECT count(*)::int n FROM clients WHERE id=ANY($1)',[[co,bridal,saree,lehenga,solo]])).rows[0].n;assert.equal(left,0);
  assert.equal((await q("SELECT count(*)::int n FROM records WHERE client_id=ANY($1)",[[co,bridal,saree,lehenga,solo]])).rows[0].n,0);
 });
+
+test('brand kit: logo, preferred words and samples save; renders use the brand name',async()=>{
+ const c2=(await act(null,{action:'create-client',name:'Kit Co '+stamp,industry:'Retail',city:'Pune'})).data.id;
+ const br=(await act(null,{action:'create-client',parent_id:c2,node_type:'brand',name:'Kit Brand'})).data.id;
+ const pr=(await act(null,{action:'create-client',parent_id:br,node_type:'product',name:'Kit Product',brief:{description:'x'}})).data.id;
+ const logo=id();await q('INSERT INTO files(id,client_id,name,mime,size,storage_path) VALUES($1,$2,$3,$4,$5,$6)',[logo,br,'logo.png','image/png',1,'uploads/none-'+logo+'.png']);
+ const r=await act(br,{action:'save-record',kind:'BrandKit',title:'Kit',data:{colors:['#111111','#ffffff'],voice:'Warm',preferred_words:['handmade'],sample_content:['Made by hand'],banned_words:['cheap'],logo_file_id:logo}});assert.equal(r.status,200,JSON.stringify(r.data));
+ const b=await brandFor(await resolveClient(pr));assert.equal(b.data.logo_file_id,logo);assert.deepEqual(b.data.preferred_words,['handmade']);assert.deepEqual(b.file_ids.includes(logo),true);
+ const prev=await request(`brand-preview?client=${pr}&layout=hook&format=portrait`);assert.equal(prev.status,200);
+ const asset=(await act(pr,{action:'save-record',kind:'Asset',title:'Copy',data:{type:'copy',body:'Hello'}})).data.id;
+ const rr=await act(pr,{action:'render',asset_id:asset,type:'image',format:'portrait',layout:'auto',composer:'template'});assert.equal(rr.status,200,JSON.stringify(rr.data));
+ const job=(await q("SELECT payload FROM jobs WHERE client_id=$1 AND type='render' ORDER BY created_at DESC LIMIT 1",[pr])).rows[0];assert.equal(job.payload.client_name,'Kit Brand');
+ await act(c2,{action:'delete-client',confirm_name:'Kit Co '+stamp});
+});
