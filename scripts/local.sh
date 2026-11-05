@@ -11,7 +11,15 @@ fi
 "$PG_BIN/psql" -h 127.0.0.1 -p 55439 -U exora -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='exora_marketing'" | grep -q 1 || "$PG_BIN/createdb" -h 127.0.0.1 -p 55439 -U exora exora_marketing
 npm run db:migrate
 npm run db:seed
-npm run worker > .local/worker.log 2>&1 &
+worker_loop(){
+ while true; do
+  code=0
+  npm run worker >> .local/worker.log 2>&1 || code=$?
+  printf '\n[%s] Worker exited with code %s; restarting in 3 seconds.\n' "$(date -Iseconds)" "$code" >> .local/worker.log
+  sleep 3
+ done
+}
+worker_loop &
 WORKER_PID=$!
 trap 'kill "$WORKER_PID" 2>/dev/null || true' EXIT INT TERM
 npm run dev

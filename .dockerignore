@@ -1,0 +1,13 @@
+node_modules
+.next
+.local
+.env*
+!.env.example
+.git
+.cursor
+docs/wireframes
+**/*.md
+!README.md
+agent-transcripts
+coverage
+*.log

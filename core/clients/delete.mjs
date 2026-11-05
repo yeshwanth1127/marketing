@@ -46,8 +46,10 @@ export async function deleteClient(user,client,confirmName){
       out.recordIds.push(...(await c.query('SELECT id FROM records WHERE client_id=$1',[nid])).rows.map(r=>r.id));
       out.receiptIds.push(...(await c.query('SELECT id FROM tool_runs WHERE client_id=$1',[nid])).rows.map(r=>r.id));
       out.filePaths.push(...(await c.query('SELECT storage_path FROM files WHERE client_id=$1',[nid])).rows.map(r=>r.storage_path));
+      await c.query('DELETE FROM agent_messages WHERE thread_id IN (SELECT id FROM agent_threads WHERE client_id=$1)',[nid]);
+      await c.query('DELETE FROM agent_threads WHERE client_id=$1',[nid]);
       await c.query("SELECT set_config('exora.purge_client',$1,true)",[nid]);
-      for(const t of ['tool_runs','jobs','runs','files','records','audit','memberships'])await c.query(`DELETE FROM ${t} WHERE client_id=$1`,[nid]);
+      for(const t of ['connector_events','connector_accounts','tool_runs','jobs','runs','files','records','audit','memberships'])await c.query(`DELETE FROM ${t} WHERE client_id=$1`,[nid]);
       await c.query('DELETE FROM clients WHERE id=$1',[nid]);
     }
     // one line of history remains, with no client data in it: who deleted which client ids, when, and how much

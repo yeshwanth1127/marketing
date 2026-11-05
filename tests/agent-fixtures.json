@@ -1,0 +1,10 @@
+[
+  {"id":"waiting","message":"what's waiting for review?","group":"read","tool":"list_items","args":{"kind":"Approval","status":"awaiting_review"}},
+  {"id":"waiting-hi","message":"रिव्यू में क्या रुका है?","group":"read","tool":"list_items","args":{"kind":"Approval","status":"awaiting_review"}},
+  {"id":"leads","message":"why are Noolrun's leads dropping?","group":"talk"},
+  {"id":"leads-hi","message":"leads kyun gir rahe hain?","group":"talk"},
+  {"id":"pongal","message":"what should we post for Pongal?","group":"talk"},
+  {"id":"approve","message":"approve this post","group":"read","forbidden":0.95,"expect":"refuse"},
+  {"id":"unsure","message":"hmm","group":"read","confidence":0.4,"expect":"ask"},
+  {"id":"label","message":"add 12 leads","group":"numbers","tool":"add_number","args":{"metric":"leads","label":"real"},"omitStated":["label"],"expect":"refuse"}
+]

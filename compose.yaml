@@ -1,0 +1,65 @@
+# EXORA Marketing OS — server: docker compose up -d --build  (from /srv/apps/marketing)
+# Copy .env.example → .env and fill secrets before first start.
+name: exora-marketing
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: exora
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: exora_marketing
+    volumes:
+      - marketing_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U exora -d exora_marketing"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  web:
+    build: .
+    image: exora-marketing:latest
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://exora:${POSTGRES_PASSWORD}@postgres:5432/exora_marketing
+      NODE_ENV: production
+      EXORA_PUBLIC_ORIGIN: ${EXORA_PUBLIC_ORIGIN:-https://marketing.exora.solutions}
+      META_REDIRECT_URI: ${META_REDIRECT_URI:-https://marketing.exora.solutions/api/auth/meta/callback}
+    volumes:
+      - ./data/local:/app/.local
+    ports:
+      - "127.0.0.1:${MARKETING_HOST_PORT:-8108}:3100"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 1536m
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+  worker:
+    image: exora-marketing:latest
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://exora:${POSTGRES_PASSWORD}@postgres:5432/exora_marketing
+      NODE_ENV: production
+    volumes:
+      - ./data/local:/app/.local
+    entrypoint: ["docker-entrypoint.sh"]
+    command: ["node", "scripts/worker.mjs"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      web:
+        condition: service_started
+    restart: unless-stopped
+    mem_limit: 2048m
+    logging:
+      driver: json-file
+      options: { max-size: "20m", max-file: "5" }
+
+volumes:
+  marketing_pg:

@@ -1,0 +1,364 @@
+<!-- THROWAWAY WIREFRAME. Not a design source. Real UI is web/components Workspace + Assistant (Manrope, white, purple). -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EXORA — Solo Founder Flow (Prototype)</title>
+<style>
+  :root{--purple:#6d28d9;--purple2:#8b5cf6;--ink:#171321;--muted:#6f6a7a;--bg:#f7f6fa;--card:#fff;--line:#e8e4f0;--green:#15803d;--green-bg:#dcfce7;--amber:#b45309;--amber-bg:#fef3c7;--red:#b91c1c;--red-bg:#fee2e2;--radius:16px}
+  *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--ink)}
+  button{font:inherit;cursor:pointer} input,select,textarea{font:inherit}
+  .top{position:sticky;top:0;z-index:20;background:#fff;border-bottom:1px solid var(--line);padding:14px 28px;display:flex;align-items:center;gap:18px;flex-wrap:wrap}
+  .logo{font-weight:900;letter-spacing:.14em}.logo span{color:var(--purple)} .tag{font-size:12px;color:var(--muted);background:var(--bg);border:1px solid var(--line);padding:5px 9px;border-radius:99px}
+  .demo{margin-left:auto;font-size:12px;font-weight:700;color:var(--amber);background:var(--amber-bg);padding:7px 10px;border-radius:99px}
+  .layout{display:grid;grid-template-columns:250px 1fr;min-height:calc(100vh - 65px)}
+  aside{background:#fff;border-right:1px solid var(--line);padding:20px 14px}
+  aside h4{margin:8px 10px;color:var(--muted);font-size:11px;letter-spacing:.12em}
+  .client{width:100%;text-align:left;border:1px solid transparent;background:transparent;border-radius:12px;padding:11px 12px;margin:3px 0;display:block}
+  .client.active{background:#f1eafd;border-color:#d9c8fb}.client b{display:block}.client small{color:var(--muted)}
+  .pill{float:right;font-size:11px;font-weight:800;padding:3px 7px;border-radius:99px}.p-green{background:var(--green-bg);color:var(--green)}.p-amber{background:var(--amber-bg);color:var(--amber)}
+  .newclient{width:100%;margin-top:10px;border:1.5px dashed #c4b5fd;color:var(--purple);background:#faf8ff;border-radius:12px;padding:12px;font-weight:800}
+  .sidebox{margin:18px 4px;background:var(--bg);border:1px solid var(--line);border-radius:12px;padding:12px;font-size:13px;line-height:1.5}
+  main{padding:26px;max-width:1180px;width:100%;margin:0 auto}
+  .steps{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:22px}
+  .step{border:1px solid var(--line);background:#fff;border-radius:99px;padding:9px 13px;font-weight:700;font-size:13px;color:var(--muted)}
+  .step.active{background:var(--purple);border-color:var(--purple);color:#fff}.step.done{color:var(--green);border-color:#bbf7d0;background:#f0fdf4}
+  .screen{display:none}.screen.active{display:block;animation:fade .25s ease}@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+  h1{font-size:30px;margin:0 0 8px} h2{margin:0 0 8px} .sub{color:var(--muted);line-height:1.6;margin:0 0 20px;max-width:760px}
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.grid2{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px}
+  .card h3{margin:0 0 8px}.small{font-size:13px;color:var(--muted);line-height:1.55}
+  .big{font-size:32px;font-weight:900}.label{font-size:11px;letter-spacing:.11em;color:var(--muted);font-weight:800}
+  .btn{border:0;border-radius:11px;padding:11px 16px;background:var(--purple);color:#fff;font-weight:800}.btn:hover{background:#5b21b6}
+  .btn.secondary{background:#fff;color:var(--purple);border:1px solid #d9c8fb}.btn.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line)}
+  .btn:disabled{opacity:.45;cursor:not-allowed}.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}.right{margin-left:auto}
+  .field{margin:12px 0}.field label{display:block;font-size:13px;font-weight:800;margin-bottom:6px}
+  .field input,.field select,.field textarea{width:100%;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:#fff}
+  .drop{border:2px dashed #c4b5fd;background:#faf8ff;border-radius:16px;padding:26px;text-align:center;color:var(--purple);font-weight:800;cursor:pointer}
+  .file{display:flex;justify-content:space-between;background:#fff;border:1px solid var(--line);padding:9px 11px;border-radius:10px;margin-top:8px;font-size:13px}
+  .swatches{display:flex;gap:8px}.sw{width:42px;height:42px;border-radius:10px;border:1px solid rgba(0,0,0,.08)}
+  .check{display:flex;gap:12px;align-items:flex-start;border:1px solid var(--line);border-radius:12px;padding:13px;margin:9px 0;background:#fff}
+  .dot{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;font-weight:900;flex:0 0 auto}.d-green{background:var(--green-bg);color:var(--green)}.d-amber{background:var(--amber-bg);color:var(--amber)}.d-red{background:var(--red-bg);color:var(--red)}
+  .bar{height:10px;background:#eeeaf6;border-radius:99px;overflow:hidden}.bar i{display:block;height:100%;background:var(--purple);width:0;transition:width .5s}
+  .stage{display:flex;gap:12px;padding:13px;border:1px solid var(--line);border-radius:12px;margin:9px 0;background:#fff;align-items:center}
+  .stage .st{font-size:12px;font-weight:900;padding:5px 8px;border-radius:99px;background:var(--bg);color:var(--muted)}.stage.running .st{background:#ede9fe;color:var(--purple)}.stage.done .st{background:var(--green-bg);color:var(--green)}
+  .assets{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+  .asset{overflow:hidden;padding:0}.thumb{height:150px;padding:14px;color:#fff;display:flex;flex-direction:column;justify-content:flex-end;font-weight:900;line-height:1.25}
+  .assetbody{padding:14px}.status{font-size:11px;font-weight:900;padding:4px 8px;border-radius:99px;background:var(--bg);color:var(--muted)}
+  .status.approved{background:var(--green-bg);color:var(--green)}.status.changes{background:var(--amber-bg);color:var(--amber)}.status.rejected{background:var(--red-bg);color:var(--red)}.status.waiting{background:var(--bg);color:var(--muted)}
+  table{width:100%;border-collapse:collapse;font-size:14px}th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}th{color:var(--muted);font-size:12px}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px}
+  .tab{border:1px solid var(--line);background:#fff;border-radius:99px;padding:9px 14px;font-weight:800;font-size:13px;color:var(--muted)}
+  .tab.active{background:var(--ink);color:#fff;border-color:var(--ink)}.tab .count{opacity:.7;font-weight:700;margin-left:4px}
+  .panel{display:none}.panel.active{display:block}
+  .hook{border:1px solid var(--line);border-radius:12px;padding:12px;margin:8px 0;background:#fff;cursor:pointer}.hook.picked{border-color:var(--purple);background:#faf8ff;box-shadow:0 0 0 2px #ddd0ff}
+  .score{font-weight:900;font-size:18px;color:var(--purple)}.score small{font-size:11px;color:var(--muted);font-weight:700}
+  .qty{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}.qty .field{margin:0}.qty input{font-size:22px;font-weight:900;text-align:center}
+  .scriptbox{background:#faf8ff;border:1px solid #ddd0ff;border-radius:12px;padding:14px;white-space:pre-wrap;font-size:13px;line-height:1.55;margin-top:8px}
+  .slot{border:1px solid var(--line);border-radius:14px;padding:16px;margin:12px 0;background:#fff}
+  .budgetbar{display:flex;height:18px;border-radius:99px;overflow:hidden;margin:10px 0}.budgetbar i{display:block;height:100%}
+  .chip{display:inline-block;font-size:11px;font-weight:800;padding:3px 8px;border-radius:99px;background:#ede9fe;color:var(--purple);margin-right:4px}
+  .toast{position:fixed;bottom:20px;right:20px;background:var(--ink);color:#fff;padding:13px 16px;border-radius:12px;display:none;z-index:50;box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .navrow{display:flex;justify-content:space-between;margin-top:22px}
+  .quote{background:#faf8ff;border:1px solid #ddd0ff;border-radius:12px;padding:14px;white-space:pre-wrap;font-size:14px;line-height:1.55}
+  .num{font-size:26px;font-weight:900}.up{color:var(--green)}.down{color:var(--red)}
+  @media(max-width:850px){.layout{grid-template-columns:1fr}aside{border-right:0}.grid,.grid2,.assets{grid-template-columns:1fr}main{padding:18px}}
+</style>
+</head>
+<body>
+<header class="top"><div class="logo">EXORA <span>SOLUTIONS</span></div><span class="tag">Solo Founder Flow</span><span class="tag">2 paying clients · 0 employees</span><span class="demo">DEMO · HARDCODED PLACEHOLDER DATA</span></header>
+<div class="layout">
+<aside>
+  <h4>CLIENTS</h4>
+  <button class="client active" onclick="toast('Kaveri Dental is already fully onboarded')"><span class="pill p-green">READY</span><b>Kaveri Dental</b><small>Dental clinic · Bengaluru</small></button>
+  <button class="client" onclick="toast('Ruh Atelier is already fully onboarded')"><span class="pill p-green">READY</span><b>Ruh Atelier</b><small>Fashion label · Bengaluru</small></button>
+  <button class="client" id="client3"><span class="pill p-amber" id="client3pill">NEW</span><b>Anaya Jewels</b><small>Jewellery · Chennai · Client #3</small></button>
+  <button class="newclient" onclick="go(1)">＋ Add new client</button>
+  <div class="sidebox"><b>Your week at a glance</b><br>Mon: Produce<br>Tue: Review<br>Wed: Client approval<br>Thu–Fri: Post + ads/SEO check</div>
+  <div class="sidebox"><b>Rule of this system</b><br>One person. One screen. One month at a time. Nothing posts without approval.</div>
+</aside>
+<main>
+  <nav class="steps" id="steps"></nav>
+
+  <!-- 0 TODAY -->
+  <section class="screen active" data-screen>
+    <h1>Good morning. Here is your whole company.</h1><p class="sub">No team. No chasing your own memory. This one screen tells you what to do today for every client.</p>
+    <div class="grid">
+      <div class="card"><div class="label">WAITING FOR YOUR REVIEW</div><div class="big">6</div><p class="small">Kaveri Dental — November posts are ready in Batch Review.</p><button class="btn" onclick="go(5)">Review all →</button></div>
+      <div class="card"><div class="label">WAITING ON CLIENT</div><div class="big">1</div><p class="small">Ruh Atelier — Diwali sale offer confirmation pending since yesterday.</p><button class="btn secondary" onclick="toast('Reminder copied — paste it into WhatsApp')">Copy WhatsApp reminder</button></div>
+      <div class="card"><div class="label">POST TODAY</div><div class="big">2</div><p class="small">10:30 AM Kaveri reel · 6:00 PM Ruh carousel</p><button class="btn secondary" onclick="go(6)">Open delivery pack →</button></div>
+      <div class="card"><div class="label">NEW CLIENT</div><div class="big" style="color:var(--purple)">#3</div><p class="small">Anaya Jewels signed today. Onboard them now — target: 45 minutes.</p><button class="btn" onclick="go(1)">Start onboarding →</button></div>
+      <div class="card"><div class="label">FAILED / STUCK</div><div class="big" style="color:var(--green)">0</div><p class="small">No failed jobs. Worker is running normally.</p></div>
+      <div class="card"><div class="label">THIS MONTH</div><div class="big">2 / 2</div><p class="small">Both paying clients have a monthly plan in motion.</p></div>
+    </div>
+    <div class="navrow"><span></span><button class="btn" onclick="go(1)">Start: Add Client #3 →</button></div>
+  </section>
+
+  <!-- 1 ONBOARD START -->
+  <section class="screen" data-screen>
+    <h1>Add a new client in 3 fields.</h1><p class="sub">That is all you type to start. Everything else comes from the client, or from their files. Try it — the data below is hardcoded for the demo.</p>
+    <div class="grid2">
+      <div class="card"><h3>Step 1 · The 3-field start</h3>
+        <div class="field"><label>Company name *</label><input id="cname" value="Anaya Jewels"></div>
+        <div class="field"><label>Industry *</label><input value="Jewellery / D2C"></div>
+        <div class="field"><label>City *</label><input value="Chennai"></div>
+        <button class="btn" onclick="toast('Client created: Anaya Jewels')">Create client</button>
+        <p class="small">Optional things like website, state and languages are asked later — only if actually missing.</p>
+      </div>
+      <div class="card"><h3>Step 2 · Let WhatsApp do the asking</h3><p class="small">One click writes the questionnaire. You paste it to the client. Their reply comes back to you — no portal, no form tool, no chasing.</p>
+        <div class="quote" id="waText">Hi Anaya team! To start your marketing, please reply with:
+1) Your main services / collections
+2) Price range and any current offer
+3) Who buys from you most?
+4) City / areas you serve
+5) Instagram + website links
+6) Who approves posts from your side?
+7) Anything we should never say?</div><br>
+        <div class="row"><button class="btn" onclick="copyWA()">Copy WhatsApp message</button><button class="btn secondary" onclick="fillReply()">Pretend client replied ↓</button></div>
+        <div class="field" id="replyBox" style="display:none"><label>Client's pasted reply (demo)</label><textarea rows="5">Gold & diamond jewellery, bridal collections. ₹15,000–₹3,00,000. Bridal offer: free making charges this month. Buyers: brides 24–35, Chennai. IG: @anayajewels. Approval: Priya (owner). Never say: cheapest / discount on gold rate.</textarea></div>
+      </div>
+    </div>
+    <div class="navrow"><button class="btn ghost" onclick="go(0)">← Back</button><button class="btn" onclick="go(2)">Next: Drop their files →</button></div>
+  </section>
+
+  <!-- 2 FILES + READY CHECK -->
+  <section class="screen" data-screen>
+    <h1>Drop their files. The system reads them.</h1><p class="sub">Logo, brand guide, old posts, price list. Colours, fonts and voice are extracted automatically — you only confirm. Nothing is invented: no prices, no claims, no proof.</p>
+    <div class="grid2">
+      <div>
+        <div class="drop" onclick="addFiles()">⬆ Click to simulate dropping the client pack<br><small>logo.png · brand-guide.pdf · past-posts.zip · price-list.pdf</small></div>
+        <div id="fileList"></div>
+        <div class="card" id="extractCard" style="display:none;margin-top:14px"><h3>Extracted brand kit — confirm it</h3>
+          <div class="label">COLOURS FOUND</div><div class="swatches" style="margin:8px 0"><div class="sw" style="background:#3b1f4e"></div><div class="sw" style="background:#c9a227"></div><div class="sw" style="background:#faf6ec"></div><div class="sw" style="background:#7a5c14"></div></div>
+          <p class="small"><b>Fonts:</b> Playfair Display + Manrope (matched to library)<br><b>Voice:</b> Warm, premium, family-trust tone<br><b>Audience:</b> Brides 24–35, Chennai<br><b>Never say:</b> cheapest · discount on gold rate</p>
+          <button class="btn" onclick="confirmKit(this)">Looks right — save brand kit</button>
+        </div>
+      </div>
+      <div class="card"><h3>Ready Check — can work start?</h3><p class="small">Red must become green before a month of content can be produced. This replaces your mental checklist.</p><div id="checks"></div>
+        <div class="label" style="margin-top:12px">READINESS</div><div class="bar"><i id="readyBar"></i></div><p class="small"><b id="readyPct">0%</b> ready</p>
+        <div class="field"><label>Monthly package (set up once, reused for every future client)</label><select id="pkg" onchange="toast('Package applied: settings, tasks and report format cloned')"><option>Starter — 12 posts · 4 reels · Ads</option><option selected>Growth — 16 posts · 6 reels · Ads · SEO</option><option>Content Only — 12 posts · 4 reels</option></select></div>
+      </div>
+    </div>
+    <div class="navrow"><button class="btn ghost" onclick="go(1)">← Back</button><button class="btn" id="kickBtn" disabled onclick="go(3)">Next: Start their strategy →</button></div>
+  </section>
+
+  <!-- 3 STRATEGY -->
+  <section class="screen" data-screen>
+    <h1>Same-day kickoff: strategy starts itself.</h1><p class="sub">Onboarding ends with work already moving — not with an empty folder. Four stages run one after another. If one fails, it resumes from that stage.</p>
+    <div class="card"><div id="strategyStages"></div>
+      <div class="row" style="margin-top:14px"><button class="btn" id="stratBtn" onclick="runStages('strategyStages','stratBtn',()=>{document.getElementById('toProduce').disabled=false;toast('Strategy draft ready for your review')})">Run strategy</button><span class="small">Positioning → Offer → Funnel & Channels → Growth Plan</span></div>
+    </div>
+    <div class="card" style="margin-top:14px"><h3>What you will get (placeholder)</h3><p class="small"><b>Positioning:</b> Chennai bridal jewellery with transparent gold-rate pricing.<br><b>Offer:</b> Free making charges on bridal sets this month (client-confirmed).<br><b>Channels:</b> Instagram reels + Google search for “bridal jewellery Chennai”.<br><b>Goal:</b> 40 store-visit enquiries this month.</p></div>
+    <div class="navrow"><button class="btn ghost" onclick="go(2)">← Back</button><button class="btn" id="toProduce" disabled onclick="go(4)">Next: Produce the month →</button></div>
+  </section>
+
+  <!-- 4 PRODUCE MONTH -->
+  <section class="screen" data-screen>
+    <h1>Tell it exactly how much to make.</h1><p class="sub">You decide the numbers. The machine then builds the calendar, hooks, scripts, designs, ads and SEO to match — nothing more, nothing less.</p>
+    <div class="grid2">
+      <div class="card">
+        <h3>November for Anaya Jewels</h3>
+        <div class="field"><label>Goal this month</label><input id="goalIn" value="40 bridal store-visit enquiries"></div>
+        <div class="field"><label>Offer to push</label><input id="offerIn" value="Free making charges on bridal sets"></div>
+        <div class="label" style="margin-top:8px">HOW MANY PIECES?</div>
+        <div class="qty" style="margin-top:8px">
+          <div class="field"><label>Static posts</label><input type="number" id="nPosts" min="0" max="40" value="12" oninput="updateQty()"></div>
+          <div class="field"><label>Reels / videos</label><input type="number" id="nReels" min="0" max="20" value="6" oninput="updateQty()"></div>
+          <div class="field"><label>Carousels</label><input type="number" id="nCarousels" min="0" max="20" value="4" oninput="updateQty()"></div>
+          <div class="field"><label>Ad variants</label><input type="number" id="nAds" min="0" max="20" value="4" oninput="updateQty()"></div>
+        </div>
+        <p class="small" id="qtySummary" style="margin-top:10px"></p>
+        <div class="grid2">
+          <div class="field"><label>Ad budget (₹)</label><input id="budgetIn" value="30000"></div>
+          <div class="field"><label>Language</label><select id="langIn"><option>English</option><option>Tamil</option><option selected>English + Tamil</option></select></div>
+        </div>
+        <div class="field"><label>Channels</label><select id="chanIn"><option>Instagram only</option><option selected>Instagram + Google Ads</option><option>Instagram + Google Ads + SEO</option></select></div>
+        <button class="btn" id="prodBtn" onclick="startProduce()">⚡ Produce this month</button>
+      </div>
+      <div class="card"><h3>Production pipeline</h3><p class="small">Same 6 stages you saw — each one must finish before the next starts. Review will open all 6 outputs.</p><div id="prodStages"></div></div>
+    </div>
+    <div class="navrow"><button class="btn ghost" onclick="go(3)">← Back</button><button class="btn" id="toReview" disabled onclick="go(5)">Next: Review all 6 outputs →</button></div>
+  </section>
+
+  <!-- 5 REVIEW — ALL 6 PIPELINE OUTPUTS -->
+  <section class="screen" data-screen>
+    <h1>Review every output the pipeline made.</h1>
+    <p class="sub">Not just the pretty pictures. Calendar → hooks with scores → scripts → designs → ads → SEO. Everything from the 6 stages, in one place. <b id="reviewCount"></b></p>
+    <div class="tabs" id="reviewTabs">
+      <button class="tab active" onclick="showPanel(0,this)">1 · Calendar</button>
+      <button class="tab" onclick="showPanel(1,this)">2 · Hooks + scores</button>
+      <button class="tab" onclick="showPanel(2,this)">3 · Scripts & captions</button>
+      <button class="tab" onclick="showPanel(3,this)">4 · Designs & reels</button>
+      <button class="tab" onclick="showPanel(4,this)">5 · Ads pack</button>
+      <button class="tab" onclick="showPanel(5,this)">6 · SEO pack</button>
+    </div>
+
+    <!-- Panel 1: Calendar -->
+    <div class="panel active" data-panel>
+      <div class="card">
+        <h3>November content calendar</h3>
+        <p class="small">Built from your counts. Budget split + UTM link tags included. Approve the calendar before locking hooks.</p>
+        <div class="budgetbar"><i style="width:45%;background:#6d28d9"></i><i style="width:35%;background:#c9a227"></i><i style="width:20%;background:#15803d"></i></div>
+        <p class="small"><span class="chip">Instagram 45%</span><span class="chip">Google Ads 35%</span><span class="chip">SEO / content 20%</span> · Total ad budget ₹<b id="calBudget">30,000</b></p>
+        <table>
+          <thead><tr><th>Date</th><th>Type</th><th>Platform</th><th>Theme / pillar</th><th>UTM</th><th></th></tr></thead>
+          <tbody id="calBody"></tbody>
+        </table>
+        <div class="row" style="margin-top:14px"><button class="btn" onclick="toast('Calendar approved — hooks locked to these slots')">Approve calendar</button><button class="btn secondary" onclick="toast('Edit calendar (demo)')">Edit dates</button></div>
+      </div>
+    </div>
+
+    <!-- Panel 2: Hooks -->
+    <div class="panel" data-panel>
+      <div class="card">
+        <h3>Hooks — 3 scored options per slot. Pick one.</h3>
+        <p class="small">Each opening line is scored (0–100) against viral formulas. The green pick is the system recommendation — change it if you disagree.</p>
+        <div id="hooksBody"></div>
+      </div>
+    </div>
+
+    <!-- Panel 3: Scripts -->
+    <div class="panel" data-panel>
+      <div class="card">
+        <h3>Scripts, captions & CTAs</h3>
+        <p class="small">Written from the chosen hook. Heuristic checks already ran (claims, banned words, disclosure).</p>
+        <div id="scriptsBody"></div>
+      </div>
+    </div>
+
+    <!-- Panel 4: Designs -->
+    <div class="panel" data-panel>
+      <div class="card" style="margin-bottom:14px"><h3>Designs & reels</h3><p class="small">Brand-styled renders from the brand kit. Approve / request changes / reject. Approved items lock.</p><b id="designCount"></b></div>
+      <div class="assets" id="assets"></div>
+    </div>
+
+    <!-- Panel 5: Ads -->
+    <div class="panel" data-panel>
+      <div class="card">
+        <h3>Ads pack — Meta + Google</h3>
+        <p class="small">Variants ready for you to paste into Ads Manager. Budgets are suggestions only — you launch by hand for now.</p>
+        <table>
+          <thead><tr><th>Platform</th><th>Ad</th><th>Audience</th><th>Daily ₹</th><th>Primary text</th><th></th></tr></thead>
+          <tbody id="adsBody"></tbody>
+        </table>
+        <div class="row" style="margin-top:14px"><button class="btn" onclick="toast('Ads pack approved')">Approve ads pack</button></div>
+      </div>
+    </div>
+
+    <!-- Panel 6: SEO -->
+    <div class="panel" data-panel>
+      <div class="grid2">
+        <div class="card">
+          <h3>Keyword plan</h3>
+          <table>
+            <thead><tr><th>Keyword</th><th>Intent</th><th>Page / action</th></tr></thead>
+            <tbody>
+              <tr><td>bridal jewellery Chennai</td><td>High</td><td>Landing page + Google Ads</td></tr>
+              <tr><td>gold rate today Chennai</td><td>Medium</td><td>Blog + GBP post</td></tr>
+              <tr><td>temple jewellery bridal set</td><td>High</td><td>Collection page</td></tr>
+              <tr><td>making charges free Chennai</td><td>Offer</td><td>Landing + Meta ad</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="card">
+          <h3>Google Business Profile checklist</h3>
+          <div class="check"><div class="dot d-green">✓</div><div><b>NAP consistent</b><div class="small">Name, address, phone match website</div></div></div>
+          <div class="check"><div class="dot d-amber">!</div><div><b>Weekly GBP posts</b><div class="small">4 posts drafted for November — schedule manually</div></div></div>
+          <div class="check"><div class="dot d-amber">!</div><div><b>Photo refresh</b><div class="small">Ask client for 8 new store / product photos</div></div></div>
+          <div class="check"><div class="dot d-green">✓</div><div><b>Services listed</b><div class="small">Bridal · Temple jewellery · Custom gold</div></div></div>
+          <div class="row" style="margin-top:10px"><button class="btn" onclick="toast('SEO pack approved')">Approve SEO pack</button></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="navrow"><button class="btn ghost" onclick="go(4)">← Back</button><button class="btn" onclick="go(6)">Next: Delivery pack →</button></div>
+  </section>
+
+  <!-- 6 DELIVERY -->
+  <section class="screen" data-screen>
+    <h1>One pack out. You post by hand — for now.</h1><p class="sub">Auto-posting is not built yet, so the system gives you one neat folder instead of files scattered everywhere.</p>
+    <div class="grid2">
+      <div class="card"><h3>📦 Anaya-Jewels-November-Pack</h3>
+        <div class="file"><span>images/ (16 PNG)</span><span>✓</span></div><div class="file"><span>reels/ (6 MP4)</span><span>✓</span></div>
+        <div class="file"><span>captions.txt</span><span>✓</span></div><div class="file"><span>calendar.csv — date, platform, caption, link tags</span><span>✓</span></div>
+        <div class="file"><span>ads-launch-sheet.csv — Meta + Google</span><span>✓</span></div><div class="file"><span>seo-checklist.md — Google profile + pages</span><span>✓</span></div><br>
+        <button class="btn" onclick="downloadPack()">Download pack (demo .txt)</button>
+      </div>
+      <div class="card"><h3>Record what the client said</h3><p class="small">Client replies on WhatsApp. You record it in one click, so there is proof later.</p>
+        <div class="stage"><div><b>November pack v1</b><div class="small" id="decisionText">Sent on WhatsApp · waiting for Priya's reply</div></div><span class="st right" id="decisionPill">WAITING</span></div>
+        <div class="row"><button class="btn" onclick="decision('APPROVED','Client approved on WhatsApp')">✓ Client approved</button><button class="btn secondary" onclick="decision('CHANGES','Changes requested — noted')">Ask for changes</button><button class="btn ghost" onclick="decision('REJECTED','Client rejected — noted')">Rejected</button></div>
+        <h3 style="margin-top:20px">Post today</h3><p class="small">10:30 AM — Reel: “3 questions before buying bridal gold”<br>6:00 PM — Carousel: Bridal set collection</p>
+      </div>
+    </div>
+    <div class="navrow"><button class="btn ghost" onclick="go(5)">← Back</button><button class="btn" onclick="go(7)">Next: Weekly results →</button></div>
+  </section>
+
+  <!-- 7 RESULTS -->
+  <section class="screen" data-screen>
+    <h1>Friday: what worked, in real numbers only.</h1><p class="sub">Once a week you drop in the numbers from Meta/Google. The system does the maths, flags waste, writes the client report and remembers the lesson for next month.</p>
+    <button class="btn" onclick="showResults(this)">Simulate importing this week's Meta + Google sheet</button>
+    <div id="results" style="display:none">
+      <div class="grid" style="margin-top:16px">
+        <div class="card"><div class="label">AD SPEND (REAL)</div><div class="num">₹18,420</div><p class="small up">On pace for ₹30,000 budget</p></div>
+        <div class="card"><div class="label">ENQUIRIES (REAL)</div><div class="num">27</div><p class="small up">▲ Goal: 40 this month</p></div>
+        <div class="card"><div class="label">BEST POST</div><div class="num">Reel #3</div><p class="small">“Gold-rate truth” hook — 3.1× normal views</p></div>
+      </div>
+      <div class="grid2" style="margin-top:14px">
+        <div class="card"><h3>System flags</h3><p class="small">⚠ Ad Set B: cost per enquiry ₹1,240 (above ₹800 limit) — consider pausing.<br>✓ Reel #3 hook style should be repeated next month.<br>✓ Google search “bridal jewellery Chennai” — clicks up 22%.</p></div>
+        <div class="card"><h3>Lesson saved for next month</h3><p class="small">“Education hooks about gold-rate transparency beat offer posts for bridal enquiries.”<br><b>Evidence:</b> Reel #3 + Ad Set A numbers (real).</p><button class="btn secondary" onclick="toast('Monthly client report generated (placeholder)')">Generate client report</button></div>
+      </div>
+      <div class="card" style="margin-top:14px;text-align:center;padding:28px"><h2>That is the full loop 🎉</h2><p class="sub" style="margin:0 auto">Client signed → onboarded in one sitting → strategy same day → month produced in one run → reviewed in one sitting → one pack delivered → results learned. Then repeat — for Client #3, #4, #5 the same way.</p><br><button class="btn" onclick="go(0)">Back to Today</button></div>
+    </div>
+    <div class="navrow"><button class="btn ghost" onclick="go(6)">← Back</button><span></span></div>
+  </section>
+</main>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const STEP_NAMES=["Today","1 · Add Client","2 · Files & Ready","3 · Strategy","4 · Produce Month","5 · Review All","6 · Delivery","7 · Results"];
+let current=0;
+const stepsEl=document.getElementById('steps');
+STEP_NAMES.forEach((n,i)=>{const b=document.createElement('button');b.className='step'+(i===0?' active':'');b.textContent=n;b.onclick=()=>go(i);stepsEl.appendChild(b)});
+function go(i){current=i;document.querySelectorAll('[data-screen]').forEach((s,j)=>s.classList.toggle('active',j===i));document.querySelectorAll('.step').forEach((s,j)=>{s.classList.toggle('active',j===i);if(j<i)s.classList.add('done')});window.scrollTo({top:0,behavior:'smooth'})}
+let toastTimer;function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>t.style.display='none',2600)}
+function copyWA(){const txt=document.getElementById('waText').innerText;(navigator.clipboard?navigator.clipboard.writeText(txt):Promise.reject()).then(()=>toast('WhatsApp questionnaire copied')).catch(()=>toast('Copied (demo)'));document.getElementById('replyBox').style.display='block'}
+function fillReply(){document.getElementById('replyBox').style.display='block';toast('Client reply pasted — details imported (demo)')}
+
+/* Ready check */
+const CHECKS=[["Company details","Name, industry, city added",true],["Client answers","WhatsApp questionnaire received",false],["Brand kit","Logo, colours, fonts, voice confirmed",false],["Services & offer","Collections + bridal offer confirmed by client",false],["Approval person","Priya (owner) approves posts",false],["Package selected","Growth: 16 posts · 6 reels · Ads · SEO",true]];
+let checksState=CHECKS.map(c=>c[2]);
+function renderChecks(){const el=document.getElementById('checks');el.innerHTML='';CHECKS.forEach((c,i)=>{const d=document.createElement('div');d.className='check';d.innerHTML=`<div class="dot ${checksState[i]?'d-green':'d-red'}">${checksState[i]?'✓':'!'}</div><div><b>${c[0]}</b><div class="small">${c[1]}</div></div><button class="btn secondary right" ${checksState[i]?'disabled':''} onclick="fixCheck(${i})">${checksState[i]?'Done':'Confirm'}</button>`;el.appendChild(d)});const pct=Math.round(checksState.filter(Boolean).length/checksState.length*100);document.getElementById('readyBar').style.width=pct+'%';document.getElementById('readyPct').textContent=pct+'%';const ok=pct===100;document.getElementById('kickBtn').disabled=!ok;if(ok){document.getElementById('client3pill').textContent='READY';document.getElementById('client3pill').className='pill p-green'}}
+function fixCheck(i){checksState[i]=true;renderChecks();toast('Confirmed: '+CHECKS[i][0])}
+renderChecks();
+function addFiles(){const names=['logo.png','brand-guide.pdf','past-posts.zip','price-list.pdf'];document.getElementById('fileList').innerHTML=names.map(n=>`<div class="file"><span>📄 ${n}</span><span>uploaded ✓</span></div>`).join('');toast('Reading files… colours, fonts, voice found');setTimeout(()=>{document.getElementById('extractCard').style.display='block'},600)}
+function confirmKit(btn){btn.disabled=true;btn.textContent='Brand kit saved ✓';checksState[2]=true;renderChecks()}
+
+/* Stage runner (strategy + production) */
+const STAGE_SETS={
+ strategyStages:["Positioning audit — how the brand looks vs competitors","Offer design — bridal offer, value, guarantee","Funnel & channels — Instagram + Google roles","Growth plan — month goals and content pillars"],
+ prodStages:["Monthly plan — calendar, budget split, link tags","Hooks — scored opening lines for every slot","Writing — scripts, captions, ad copy (checks run)","Designs & reels — brand-styled PNG + MP4 renders","Ads pack — Meta + Google variants and budgets","SEO pack — keyword plan + Google profile checklist"]};
+function stageHTML(id){return STAGE_SETS[id].map(s=>`<div class="stage"><span class="st">QUEUED</span><div>${s}</div></div>`).join('')}
+document.getElementById('strategyStages').innerHTML=stageHTML('strategyStages');
+document.getElementById('prodStages').innerHTML=stageHTML('prodStages');
+function runStages(id,btnId,done){const btn=document.getElementById(btnId);btn.disabled=true;btn.textContent='Running…';const rows=[...document.getElementById(id).children];let i=0;function next(){if(i>0){rows[i-1].className='stage done';rows[i-1].querySelector('.st').textContent='DONE ✓'}if(i>=rows.length){btn.textContent='Completed ✓';done&&done();return}rows[i].className='stage running';rows[i].querySelector('.st').textContent='RUNNING';i++;setTimeout(next,750)}next()}
+
+/* Review assets */
+const ASSETS=[
+ ["3 questions before buying bridal gold","REEL · 9:16","linear-gradient(135deg,#3b1f4e,#c9a227)"],
+ ["Bridal set collection — new arrivals","CAROUSEL · 4:5","linear-gradient(135deg,#7a1f3d,#e8a2b4)"],
+ ["Free making charges — this month only","OFFER POST · 4:5","linear-gradient(135deg,#14532d,#4ade80)"],
+ ["Myth: gold rate is same everywhere","MYTH vs FACT · 4:5","linear-gradient(135deg,#1e3a5f,#60a5fa)"],
+ ["A bride's first store visit","BEHIND SCENES · REEL","linear-gradient(135deg,#7c2d12,#fb923c)"],
+ ["Google ad — Bridal Jewellery Chennai","AD COPY · SEARCH","linear-gradient(135deg,#171321,#6d28d9)"]];
+let assetState=ASSETS.map(()=>'waiting');
+function renderAssets(){const el=document.getElementById('assets');el.innerHTML='';ASSETS.forEach((a,i)=>{const d=document.createElement('div');d.className='card asset';d.innerHTML=`<div class="thumb" style="background:${a[2]}"><span style="font-size:11px;opacity:.85">${a[1]}</span>${a[0]}</div><div class="assetbody"><div class="row"><span class="status ${assetState[i]}">${assetState[i].toUpperCase()}</span></div><div class="row" style="margin-top:12px"><button class="btn" onclick="setAsset(${i},'approved')">Approve</button><button class="btn secondary" onclick="setAsset(${i},'changes')">Changes</button><button class="btn ghost" onclick="setAsset(${i},'rejected')">Reject</button></div></div>`;el.appendChild(d)});const n=assetState.filter(s=>s==='approved').length;document.getElementById('reviewCount').textContent=`${n} of ${ASSETS.length} approved.`}
+function setAsset(i,s){assetState[i]=s;renderAssets();toast('Asset marked '+s)}
+renderAssets();
+
+function decision(s,msg){document.getElementById('decisionPill').textContent=s;document.getElementById('decisionText').textContent=msg+' · '+new Date().toLocaleDateString('en-IN');toast('Client decision recorded: '+s)}
+function downloadPack(){const text="EXORA DEMO DELIVERY PACK — Anaya Jewels (November)\n\nFiles: 16 images, 6 reels, captions.txt, calendar.csv, ads-launch-sheet.csv, seo-checklist.md\n(This is a placeholder generated by the prototype.)";const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([text],{type:'text/plain'}));a.download='Anaya-Jewels-November-Pack.txt';a.click();toast('Demo pack downloaded')}
+function showResults(btn){btn.disabled=true;document.getElementById('results').style.display='block';toast('Weekly numbers imported — all labelled REAL')}
+</script>
+</body>
+</html>

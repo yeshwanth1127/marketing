@@ -182,6 +182,7 @@ nav{display:flex;flex-direction:column;gap:1px}
 .tab-row button{all:unset;padding:6px 12px;border-radius:8px;font-size:13px;color:var(--mute);cursor:pointer}
 .tab-row button span{margin-left:6px;color:var(--faint);font-size:12px}
 .tab-row button.selected{background:#fff;color:var(--ink);box-shadow:0 1px 2px rgba(20,10,40,.08)}
+.action-row input{flex:1;min-width:160px;border:1px solid var(--line);border-radius:8px;padding:8px 10px;background:#fff}
 
 /* ---------- client & brand ---------- */
 .client-profile{display:flex;align-items:center;gap:14px;margin-bottom:18px}
@@ -216,6 +217,11 @@ input[type=checkbox]{accent-color:var(--purple);width:15px;height:15px}
 .connector-card>div{flex:1}.connector-card h3{font-size:14px;color:var(--ink);font-weight:500;margin:0 0 2px}.connector-card p{color:var(--mute);font-size:12.5px;margin-bottom:6px}
 .connector-icon{width:30px;height:30px;border-radius:8px;background:var(--soft-2);display:grid;place-items:center;font-size:12px;color:var(--ink-2);flex:none}
 .connector-state{font-size:11.5px;color:var(--faint);white-space:nowrap}
+.connector-state.connected{color:var(--purple);font-weight:500}
+.connector-state.expired,.connector-state.error{color:#b42318}
+.connector-pick{margin-top:8px}
+.connector-pick select{width:100%;margin-top:4px;font-size:12.5px}
+.connector-card .action-row{margin-top:8px;flex-wrap:wrap}
 
 /* ---------- calendar ---------- */
 .month-control{display:flex;align-items:center;gap:6px}.month-control h2{min-width:170px;text-align:center;font-size:18px;font-weight:400}
@@ -404,3 +410,30 @@ select[multiple]{background-image:none;min-height:90px}
 .logo-picker{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .logo-picker img{height:56px;max-width:160px;object-fit:contain;border:1px solid var(--line,#e5e5e5);border-radius:8px;padding:6px;background:#fff}
 .logo-picker select{min-width:180px}
+
+.agent-layout{display:grid;grid-template-columns:minmax(0,1fr) 280px;gap:18px;align-items:stretch;min-height:calc(100vh - 180px)}
+.agent-chat{display:flex;flex-direction:column;min-height:560px;padding:8px 8px 14px}
+.agent-log{flex:1;overflow:auto;display:flex;flex-direction:column;gap:10px;padding:8px 12px 16px;max-height:calc(100vh - 320px)}
+.agent-empty{color:var(--mute);max-width:46ch}
+.agent-bubble{max-width:68ch;padding:10px 14px;border-radius:14px;white-space:pre-wrap}
+.agent-bubble p{margin:0}
+.agent-bubble.user{align-self:flex-end;background:var(--purple-soft);color:var(--purple-ink)}
+.agent-bubble.assistant{align-self:flex-start;background:var(--soft);border:1px solid var(--line)}
+.agent-actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.agent-actions .button{font-size:12.5px;padding:6px 10px}
+.agent-confirm{display:flex;justify-content:space-between;gap:12px;align-items:center;margin:0 12px 10px;padding:10px 12px;border:1px solid var(--purple-line);border-radius:12px;background:var(--purple-soft)}
+.agent-confirm>div{display:flex;gap:8px}
+.agent-upload-banner{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin:0 12px 10px;padding:12px 14px;border:1px dashed var(--purple-line);border-radius:12px;background:var(--purple-soft)}
+.agent-upload-banner p{margin:4px 0 0;font-size:12.5px}
+.agent-upload-inline{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:10px}
+.agent-files{display:flex;gap:8px;flex-wrap:wrap;padding:0 12px 8px}
+.agent-files span{display:inline-flex;align-items:center;gap:6px;background:var(--soft);border-radius:20px;padding:2px 8px;font-size:12px}
+.agent-files button{all:unset;cursor:pointer;display:grid}
+.agent-compose{display:flex;gap:8px;align-items:center;padding:0 8px}
+.agent-compose input{flex:1;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.agent-compose .icon-button{position:relative;overflow:hidden}
+.agent-side{padding:8px 14px 16px;display:flex;flex-direction:column;gap:8px}
+.agent-card{all:unset;cursor:pointer;display:grid;gap:2px;padding:10px;border:1px solid var(--line);border-radius:12px}
+.agent-card:hover{border-color:var(--purple-line);background:var(--purple-soft)}
+.agent-card small{color:var(--mute)}
+@media(max-width:900px){.agent-layout{grid-template-columns:1fr}.agent-log{max-height:50vh}}
