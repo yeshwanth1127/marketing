@@ -40,3 +40,7 @@ curl -sS https://marketing.exora.solutions/api/health
 ```
 
 Sign in with `admin@exora.local` and the password from `EXORA_INITIAL_PASSWORD`, then change it in Settings.
+
+## 6. Full server checklist
+
+See **[server-verification-checklist.md](./server-verification-checklist.md)** — DNS, TLS, Docker, `.env`, Meta OAuth, webhooks, worker, and security checks with copy-paste commands.
