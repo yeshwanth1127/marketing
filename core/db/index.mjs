@@ -17,6 +17,20 @@ export const q=(text,values=[])=>pool.query(text,values);
 export async function tx(fn){const c=await pool.connect();try{await c.query('BEGIN');const r=await fn(c);await c.query('COMMIT');return r;}catch(e){await c.query('ROLLBACK');throw e;}finally{c.release();}}
 export async function audit(c,user,client,action,entity,details={}){const via=requestContext.getStore()?.via||null;await c.query('INSERT INTO audit(client_id,actor_id,action,entity_id,details,via) VALUES($1,$2,$3,$4,$5,$6)',[client,user?.id||null,action,entity||null,details,via]);}
 export async function insert(c,user,client,kind,title,data={},status='draft',extra={}) {const rid=id();const r=await c.query('INSERT INTO records(id,client_id,kind,title,data,status,created_by,version,parent_id) VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9) RETURNING *',[rid,client,kind,title,data,status,user?.id||null,extra.version||1,extra.parent_id||null]);await audit(c,user,client,'create:'+kind,rid,{title,status});return r.rows[0];}
+// One live Strategy draft per workspace: update the current draft instead of stacking duplicates.
+export async function upsertStrategy(c,user,client,title,data={},extra={}){
+ const prefer=extra.replace_id||null;
+ const existing=prefer
+  ?(await c.query("SELECT * FROM records WHERE id=$1 AND client_id=$2 AND kind='Strategy' FOR UPDATE",[prefer,client])).rows[0]
+  :(await c.query("SELECT * FROM records WHERE client_id=$1 AND kind='Strategy' AND status IN ('draft','changes_requested') AND coalesce(data->>'validation_status','')<>'superseded' ORDER BY created_at DESC LIMIT 1 FOR UPDATE",[client])).rows[0];
+ if(existing&&!['approved','scheduled','published','awaiting_review','archived'].includes(existing.status)){
+  const version=Number(existing.version||1)+(extra.bump_version?1:0);
+  const row=(await c.query('UPDATE records SET title=$2,data=$3,status=$4,version=$5,updated_at=now() WHERE id=$1 RETURNING *',[existing.id,title,data,'draft',version||existing.version||1])).rows[0];
+  await audit(c,user,client,'edit:Strategy',row.id,{title,upsert:true});
+  return row;
+ }
+ return insert(c,user,client,'Strategy',title,data,'draft',extra);
+}
 export function fail(message,status=400){const e=new Error(message);e.status=status;throw e;}
 export function requireText(value,label,max=20000){if(typeof value!=='string'||!value.trim()||value.length>max)fail(label+' is required (max '+max+' characters)');return value.trim();}
 // Apply the schema files (all idempotent) once per process, so code updated while the app runs never

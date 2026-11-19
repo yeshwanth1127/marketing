@@ -30,8 +30,8 @@ export function prefill(tool,args,message,fileIds=[]){
  return out;
 }
 
-export function nextQuestion(tool,args){
- if(isStrategyDraft(tool,args))return nextStrategyField(args);
+export function nextQuestion(tool,args,client){
+ if(isStrategyDraft(tool,args))return nextStrategyField(args,client);
  const fields=tool.open||[];
  const required=fields.some(f=>f.required);
  for(const field of fields){
@@ -61,7 +61,7 @@ async function readFile(client,fileId){
 function provider(){return process.env.EXORA_AGENT_DRAFT||(claudeState().connected?'claude':'local_template');}
 
 export async function execute(tool,raw,ctx){
- if(isStrategyDraft(tool,raw))raw={...raw,brief:strategyBrief(strategyInputs(raw),raw.brief&&!String(raw.brief).includes('objective: ')?raw.brief:'')};
+ if(isStrategyDraft(tool,raw))raw={...raw,brief:strategyBrief(strategyInputs(raw),raw.brief&&!String(raw.brief).includes('objective: ')?raw.brief:'',ctx.client)};
  const args=tool.schema?tool.schema.parse(raw):raw;
  const {user,client}=ctx;
  switch(tool.action){
@@ -151,7 +151,7 @@ export async function execute(tool,raw,ctx){
   }
   case 'revise':return call(user,client,{action:'revise',id:args.id});
   case 'choose-hook':return call(user,client,{action:'choose-hook',id:args.id,index:Number(args.index)});
-  case 'render':return call(user,client,{action:'render',asset_id:args.asset_id,type:args.type,format:args.format,layout:args.layout||'auto',composer:args.composer||'template'});
+  case 'render':return call(user,client,{action:'render',asset_id:args.asset_id,type:args.type,format:args.format,layout:args.layout||'auto',composer:args.type==='video'?'claude':(args.composer||'claude')});
   case 'clean-media':return call(user,client,{action:'clean-media',file_id:args.file_id,licence:args.licence});
   case 'submit-approval':return call(user,client,{action:'submit-approval',id:args.id});
   case 'schedule':return call(user,client,{action:'schedule',asset_id:args.asset_id,platform:args.platform,scheduled_at:args.scheduled_at,to:args.to});

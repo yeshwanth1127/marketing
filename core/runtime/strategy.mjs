@@ -2,18 +2,19 @@
 // outputs of the earlier stages, instead of guessing them in the same prompt.
 import {z} from 'zod';
 import {runAgent} from './agent.mjs';
-import {inputsLedger,strategyInputs} from '../agent/strategy-fields.mjs';
+import {ensureDatedTitle,inputsLedger,strategyDatedTitle,strategyInputs,strategyScope} from '../agent/strategy-fields.mjs';
 
 const one=z.array(z.object({kind:z.string(),title:z.string().min(1).max(300),data:z.record(z.string(),z.unknown())})).min(1).max(10);
 
-const COMMON=`This is stage {n} of 4 of ONE strategy, run in order: Positioning → Offer → Funnel → Growth plan.
+const COMMON=`This is stage {n} of 4 of ONE {level} strategy, run in order: Positioning → Offer → Funnel → Growth plan.
+{altitude}
 workspace.json holds: "inputs_ledger" (every answer with status user_provided, not_provided or no_proof) and "foundations" (outputs of the earlier stages; also in foundations.json).
 Evidence rules for this stage:
 - Treat not_provided fields as unknown. Never fill them in silently.
 - Anything you add that is not in inputs_ledger, the records or foundations goes into data.assumptions as {"item","reason"}.
 - Keep every proof gap visible in data.proof_missing or data.gaps. No research was done; do not imply it was.
 - If workspace.input.validation exists, its marketer decisions and corrections are authoritative. Apply them and do not restore rejected assumptions.
-Write exactly ONE object of kind Strategy.`;
+Write exactly ONE object of kind Strategy. Title it exactly: {title}` ;
 
 export const STRATEGY_STAGES=[
  {key:'positioning',label:'Positioning audit',skills:inputs=>inputs.competitors?['positioning-audit','competitor-positioning']:['positioning-audit'],
@@ -36,16 +37,18 @@ Every forecast states its assumptions. If budget_range is not_provided, give sce
 ];
 
 export function stageSample(stage,client,base){
- if(stage.key!=='growth')return [{kind:'Strategy',title:client.name+' · '+stage.label,data:stage.sample}];
+ const scope=strategyScope(client);
+ if(stage.key!=='growth')return [{kind:'Strategy',title:client.name+' · '+scope.title+' · '+stage.label,data:{...stage.sample,level:scope.level,scope}}];
  const b=base?.[0]?.data||{};
- return [{kind:'Strategy',title:client.name+' · marketing strategy',data:{...b,executive_summary:'',budget_plan:'',kpi_framework:[],timeline_30_60_90:{days_1_30:'',days_31_60:'',days_61_90:''},team_plan:'',risks:[],scenarios:{conservative:'',moderate:'',aggressive:''},gaps:[],assumptions:[]}}];
+ return [{kind:'Strategy',title:strategyDatedTitle(client),data:{...b,level:scope.level,scope,executive_summary:'',budget_plan:'',kpi_framework:[],timeline_30_60_90:{days_1_30:'',days_31_60:'',days_61_90:''},team_plan:'',risks:[],scenarios:{conservative:'',moderate:'',aggressive:''},gaps:[],assumptions:[]}}];
 }
 
 const summaryOf=d=>String(d.positioning_statement||d.offer_summary||d.conversion_path||d.executive_summary||'').slice(0,300);
 
 export async function runStrategyPipeline({client,user,run,records,workspace,mod,input,sample,progress,runner=runAgent}){
  const inputs=strategyInputs(input.inputs||{});
- const ledger=inputsLedger(inputs);
+ const ledger=inputsLedger(inputs,client);
+ const scope=strategyScope(client);
  const skillsFor=stage=>stage.skills(inputs).map(n=>mod.skills.find(s=>s.name===n)).filter(s=>s&&(s.source!=='CF'||client.settings?.cf_enabled));
  const plan=STRATEGY_STAGES.map(s=>({key:s.key,label:s.label,skills:skillsFor(s).map(x=>x.name)}));
  progress?.plan(plan);
@@ -69,7 +72,7 @@ export async function runStrategyPipeline({client,user,run,records,workspace,mod
   const started=Date.now();
   try{
    const ws={...workspace,inputs_ledger:ledger,foundations};
-   const extra=COMMON.replace('{n}',String(i+1))+'\n'+stage.task;
+   const extra=COMMON.replace('{n}',String(i+1)).replaceAll('{level}',scope.title.toLowerCase()).replace('{altitude}',scope.altitude).replace('{title}',strategyDatedTitle(client))+'\n'+stage.task;
    const res=await runner({client,user,run,records,workspace:ws},mod,skills,stageSample(stage,client,sample),{extra,files:{'foundations.json':JSON.stringify(foundations,null,1)},onEvent:progress?e=>progress.event(e):undefined});
    const out=one.parse(res.outputs).find(o=>o.kind==='Strategy');
    if(!out)throw new Error('it did not return a strategy section');
@@ -79,7 +82,8 @@ export async function runStrategyPipeline({client,user,run,records,workspace,mod
    if(stage.key==='growth'){
     progress?.finish(stage.key,summaryOf(out.data));
     const confirmed=input.validation?.confirmed===true;
-    out.data={...out.data,foundations,inputs_ledger:ledger,pipeline,validation_status:confirmed?'confirmed':'needs_marketer_confirmation',validation:confirmed?{status:'confirmed',confirmed_at:new Date().toISOString(),source_strategy_id:input.validation.source_strategy_id||null,decisions:input.validation.decisions||[],notes:input.validation.notes||'',changed_fields:input.validation.changed_fields||[]}:{status:'needs_marketer_confirmation'}};
+    out.data={...out.data,level:scope.level,scope,foundations,inputs_ledger:ledger,pipeline,validation_status:confirmed?'confirmed':'needs_marketer_confirmation',validation:confirmed?{status:'confirmed',confirmed_at:new Date().toISOString(),source_strategy_id:input.validation.source_strategy_id||null,decisions:input.validation.decisions||[],notes:input.validation.notes||'',changed_fields:input.validation.changed_fields||[]}:{status:'needs_marketer_confirmation'}};
+    out.title=ensureDatedTitle(out.title,client);
     return {outputs:[out],receipts,loaded:[...loaded.values()]};
    }
    foundations[stage.key]={...out.data,stage:stage.key};

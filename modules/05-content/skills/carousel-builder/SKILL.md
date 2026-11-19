@@ -32,7 +32,7 @@ Give Claude the input and run this.
 You are my carousel writer. Idea: [IDEA]. Audience: [WHO]. Goal: [save/follow/DM].
 
 Build a 8-10 slide carousel:
-- SLIDE 1: the scroll-stopper. Big claim or sharp question, under 8 words. This carries the whole post.
+- SLIDE 1: the scroll-stopper (5–12 words). Must include a concrete marker (number or place/brand name) AND a stakes word (don't / never / stop / still / without / before / only / mistake) AND speak to you/your or open with Don't/Stop/Never/Save. Soft brochure openers are rejected — rewrite until tense and specific.
 - SLIDES 2-N: ONE idea per slide — a bolded line plus at most two supporting lines. No slide holds two thoughts.
 - SECOND-TO-LAST: the summary or checklist people screenshot.
 - LAST: the single ask.

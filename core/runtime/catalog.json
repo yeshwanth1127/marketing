@@ -228,11 +228,16 @@
     ],
     "approval_required": false,
     "defaults": [
+      "day-script-writer",
       "viral-hook-writer",
-      "ig-reel",
-      "ab-hook-tester"
+      "ig-reel"
     ],
     "skills": [
+      {
+        "name": "day-script-writer",
+        "source": "EXORA",
+        "path": "modules/04-hooks/skills/day-script-writer/SKILL.md"
+      },
       {
         "name": "content-research",
         "source": "OT",

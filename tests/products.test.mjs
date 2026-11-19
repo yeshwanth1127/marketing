@@ -124,3 +124,34 @@ test('brand kit: logo, preferred words and samples save; renders use the brand n
  const job=(await q("SELECT payload FROM jobs WHERE client_id=$1 AND type='render' ORDER BY created_at DESC LIMIT 1",[pr])).rows[0];assert.equal(job.payload.client_name,'Kit Brand');
  await act(c2,{action:'delete-client',confirm_name:'Kit Co '+stamp});
 });
+
+test('files fill onboarding details; missing fields stay optional',async()=>{
+ const brief=`Name: FileFill Co ${stamp}
+Industry: Education
+City: Bengaluru
+Website: https://filefill.example
+Languages: English, Hindi
+`;
+ const form=new FormData();form.set('file',new File([brief],'brief.txt',{type:'text/plain'}));
+ const up=await handle(new Request('http://localhost:3100/api/upload',{method:'POST',headers:{cookie:admin,origin:'http://localhost:3100'},body:form}));
+ assert.equal(up.status,200,await up.clone().text());
+ const file=await up.json();
+ const extracted=await act(null,{action:'extract-client-details',node_type:'company',file_ids:[file.id]});
+ assert.equal(extracted.status,200,JSON.stringify(extracted.data));
+ assert.equal(extracted.data.details.name,'FileFill Co '+stamp);
+ assert.equal(extracted.data.details.industry,'Education');
+ assert.equal(extracted.data.details.city,'Bengaluru');
+ assert.equal(extracted.data.details.website,'https://filefill.example');
+ assert.ok(extracted.data.found.includes('name'));
+ assert.ok(extracted.data.missing.includes('state / region'));
+ const created=await act(null,{action:'create-client',name:'FileFill Co '+stamp,industry:'Education',city:'Bengaluru',file_ids:[file.id]});
+ assert.equal(created.status,200,JSON.stringify(created.data));
+ const attached=(await q('SELECT client_id FROM files WHERE id=$1',[file.id])).rows[0];
+ assert.equal(attached.client_id,created.data.id);
+ const sparse=await act(null,{action:'create-client',name:'Sparse Co '+stamp});
+ assert.equal(sparse.status,200,JSON.stringify(sparse.data));
+ const row=(await q('SELECT name,industry,city FROM clients WHERE id=$1',[sparse.data.id])).rows[0];
+ assert.equal(row.industry,'');
+ assert.equal(row.city,'');
+});
+

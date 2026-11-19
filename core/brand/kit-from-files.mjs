@@ -8,9 +8,11 @@ import {catalog as fontCatalog,rolesFromPalette} from '../design/brand-profile.m
 import {openrouterChat,openrouterKey,openrouterModel,parseModelJson} from '../agent/openrouter.mjs';
 
 const exec=promisify(execFile);
-const DEFAULT_COLORS=['#254b3b','#d4ef9c','#f7f5ed'];
+// Last-resort neutrals only when the file had no readable pixels. Never EXORA's own greens.
+const FALLBACK_COLORS=['#f7f4ef','#16181d','#c45c26'];
 const TEXT_MIMES=new Set(['text/plain','text/csv','application/csv']);
 const PRESENTATION_MIMES=new Set(['application/vnd.ms-powerpoint','application/vnd.openxmlformats-officedocument.presentationml.presentation']);
+const DOCUMENT_MIMES=new Set(['application/vnd.openxmlformats-officedocument.wordprocessingml.document']);
 
 export function extractedProfile(client,result){
  const lib=fontCatalog().fonts;
@@ -42,7 +44,7 @@ export async function extractOneFile(client,row){
  const full=path.join(ROOT,'.local',row.storage_path);
  if(!full.startsWith(path.join(ROOT,'.local')+path.sep)||!fs.existsSync(full))fail('File not found',404);
  let colors=[],fonts=[],text='';
- if(row.mime.startsWith('image/')||row.mime==='application/pdf'||PRESENTATION_MIMES.has(row.mime)){
+ if(row.mime.startsWith('image/')||row.mime==='application/pdf'||PRESENTATION_MIMES.has(row.mime)||DOCUMENT_MIMES.has(row.mime)){
   const raw=await extractWithPython(full,row.mime);
   colors=raw.colors||[];fonts=raw.fonts||[];text=String(raw.text||'');
  }else if(TEXT_MIMES.has(row.mime)||row.mime.startsWith('text/')){
@@ -66,10 +68,33 @@ function mergeParts(parts){
  return {colors:colors.slice(0,12),fonts:fonts.slice(0,10),text:texts.join('\n\n').slice(0,40000),logo_file_id:logo,source_file_ids:parts.map(p=>p.file_id),source_names:parts.map(p=>p.name)};
 }
 
-function ensureColors(colors){
- const out=[...new Set((colors||[]).map(c=>String(c).toLowerCase()))].filter(c=>/^#[0-9a-f]{6}$/.test(c));
- while(out.length<3)out.push(DEFAULT_COLORS[out.length]);
- return out.slice(0,12);
+function uniqueHexes(colors){
+ return [...new Set((colors||[]).map(c=>String(c).toLowerCase()))].filter(c=>/^#[0-9a-f]{6}$/.test(c));
+}
+function channelLum(hex){
+ const n=parseInt(hex.slice(1),16);
+ const f=v=>{v/=255;return v<=0.03928?v/12.92:((v+0.055)/1.055)**2.4};
+ return 0.2126*f((n>>16)&255)+0.7152*f((n>>8)&255)+0.0722*f(n&255);
+}
+function channelSat(hex){
+ const n=parseInt(hex.slice(1),16),r=((n>>16)&255)/255,g=((n>>8)&255)/255,b=(n&255)/255;
+ const mx=Math.max(r,g,b),mn=Math.min(r,g,b),l=(mx+mn)/2;
+ return mx===mn?0:(mx-mn)/(1-Math.abs(2*l-1));
+}
+// Keep only hexes that came from the file (or the marketer's grade). Never mix in EXORA greens.
+export function completePalette(colors){
+ const out=uniqueHexes(colors);
+ if(!out.length)return FALLBACK_COLORS.slice();
+ const paper=[...out].sort((a,b)=>channelLum(a)-channelLum(b)).at(-1);
+ const ink=[...out].sort((a,b)=>channelLum(a)-channelLum(b))[0];
+ const accent=[...out].sort((a,b)=>channelSat(b)-channelSat(a))[0];
+ const ordered=[paper,ink,accent].filter((c,i,a)=>c&&a.indexOf(c)===i);
+ for(const c of out)if(!ordered.includes(c))ordered.push(c);
+ return ordered.slice(0,8);
+}
+export function gradePalette(colors){
+ const out=uniqueHexes(colors);
+ return out.length?out.slice(0,8):FALLBACK_COLORS.slice();
 }
 
 async function fieldsFromText(client,merged){
@@ -107,7 +132,7 @@ export async function buildBrandKitFromFiles(client,fileIds){
  const parts=[];
  for(const row of rows)parts.push(await extractOneFile(client,row));
  const merged=mergeParts(parts);
- const colors=ensureColors(merged.colors);
+ const colors=completePalette(merged.colors);
  const profile=extractedProfile(client,{colors,fonts:merged.fonts,text:merged.text});
  const language=await fieldsFromText(client,merged);
  const data=validData('BrandKit',{
@@ -122,10 +147,11 @@ export async function buildBrandKitFromFiles(client,fileIds){
   profile,
   logo_file_id:merged.logo_file_id||null,
   fonts_found:merged.fonts,
+  extracted_colors:merged.colors,
   extracted_text:merged.text.slice(0,4000),
   source_file_ids:merged.source_file_ids,
   source_names:merged.source_names,
-  extraction_note:'Built from uploaded files. Review colours, fonts and voice before publishing.',
+  extraction_note:merged.colors.length?'Colours taken from the uploaded files. Grade them if you need a shift.':'No strong colours were readable in the files — paper, ink and accent were inferred. Replace them from the card.',
   provider:'brand_files',
  });
  return {data,files:rows.map(r=>({id:r.id,name:r.name,mime:r.mime})),summary:summarizeBrandKit(data)};

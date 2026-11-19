@@ -59,10 +59,44 @@ export async function buildPack(client,user,{threadId,message}={}){
  return pack;
 }
 
+const NEXT_STEP={
+ brief:'finish the client details (name, industry, city)',
+ 'brand kit':'build the brand kit from their own files — colours, type and voice',
+ strategy:'draft the strategy for this workspace',
+ 'monthly plan':'plan the month — calendar and budget',
+ hooks:'write opening lines that earn the first three seconds',
+ writing:'draft the script and caption',
+ visuals:'make the post, carousel or reel',
+ review:'send work to Review before anything goes out',
+ 'posting request':'plan where and when approved work goes live',
+ numbers:'record what actually happened',
+ 'report and lessons':'write the report and save the lesson',
+};
+
+export function localTalk(pack,message=''){
+ const p=pack?.pinned||{};
+ const name=p.name||'this workspace';
+ const kind=p.type==='product'?'product':p.type==='brand'?'brand':'client';
+ const city=p.city?` in ${p.city}`:'';
+ const missing=pack?.missing&&!String(pack.missing).startsWith('nothing')?pack.missing:null;
+ const next=NEXT_STEP[missing]||(missing?String(missing):null);
+ const audience=clip(pack?.brand?.audience||'',160);
+ const voice=clip(pack?.brand?.voice||'',160);
+ const lines=[`You’re on ${name} — the ${kind}${city}.`];
+ if(audience)lines.push(`Who it’s for: ${audience}`);
+ else if(voice)lines.push(`How it sounds: ${voice}`);
+ else lines.push(`No brand kit is saved for ${name} yet. Colours, type and voice should come from their files — not a shared palette.`);
+ lines.push(next?`Next useful step: ${next}.`:`The main loop is in place for ${name}. Ask about strategy, content or results.`);
+ lines.push('Nothing has been posted or spent.');
+ void message;
+ return lines.join('\n\n');
+}
+
 export function talkPrompt(pack,message){
- return `You are EXORA's marketing assistant for one pinned client. Answer the marketer in plain language.
+ return `You are EXORA, a marketing operator helping a marketer work one pinned brand. Answer in 2–6 short sentences, specific to this workspace.
 Rules:
 - Use only the JSON pack. If a figure is not in the pack, say it is not in the workspace.
+- Name the brand. Say the next useful step. Do not mention routing, models, APIs, or internal tools.
 - Every number keeps its label: real, estimated, or inferred.
 - Advice about a festival or a post is a suggestion. It is not saved, not scheduled, and not approved.
 - Do not invent prices, proof, rankings, or results.

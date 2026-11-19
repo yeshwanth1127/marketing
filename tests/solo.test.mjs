@@ -15,7 +15,8 @@ async function json(route,body){const r=await request(route,body);const d=await 
 test('Month intake rejects an empty production',()=>{
  assert.throws(()=>monthInputs({posts:0,reels:0,carousels:0,goal:'x'}));
  const in_=monthInputs({month:'2026-11',goal:'Enquiries',offer:'No offer',posts:2,reels:1,carousels:1,ads:0,budget:'25000',channels:'Instagram, SEO'});
- assert.equal(in_.posts,2);assert.equal(in_.reels,1);assert.equal(in_.seo,true);assert.equal(buildSlots(in_).length,4);
+ assert.equal(in_.posts,2);assert.equal(in_.reels,1);assert.equal(in_.seo,true);assert.equal(in_.with_designs,false);assert.equal(buildSlots(in_).length,4);
+ assert.equal(monthInputs({...in_,with_designs:true}).with_designs,true);
 });
 test('Questionnaire parse keeps the raw reply and optional approver',()=>{
  const p=parseQuestionnaire('We sell braces.\nApprover: Meera\nNever say: guaranteed');
@@ -70,8 +71,13 @@ test('A ready client can queue and run a one-slot month',async()=>{
  assert.equal(ideas.length,1);assert.ok(ideas[0].data.hooks?.length>=1);assert.equal(typeof ideas[0].data.selected_hook,'number');
  const copies=(await q("SELECT * FROM records WHERE client_id=$1 AND kind='Asset' AND coalesce(data->>'type','copy')='copy' AND data->>'month_job'=$2",[client,job.id])).rows;
  assert.equal(copies.length,1);
+ assert.equal(ideas[0].data.slot_date,campaign.data.slots[0].date);
+ assert.equal(copies[0].data.slot_date,campaign.data.slots[0].date);
+ assert.equal(copies[0].data.day_focus,true);
  const visuals=(await q("SELECT * FROM records WHERE client_id=$1 AND kind='Asset' AND data->>'type'<>'copy' AND data->>'month_job'=$2",[client,job.id])).rows;
- assert.equal(visuals.length,1);assert.equal(visuals[0].data.render_status,'queued');
+ assert.equal(visuals.length,0);
+ assert.equal(done.result?.queued_renders?.length||0,0);
+ assert.equal(done.progress?.results?.designs?.skipped,true);
  const pack=await buildMonthPack({id:client,name:'Solo'},job.id);
  assert.ok(pack.files.includes('captions.txt'));assert.ok(pack.files.includes('calendar.csv'));assert.ok(pack.files.includes('hooks.csv'));
  const decide=await json('action',{action:'record-client-decision',client_id:client,id:campaign.id,decision:'approved',note:'WhatsApp yes'});

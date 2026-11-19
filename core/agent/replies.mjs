@@ -1,13 +1,14 @@
 const KIND={BrandKit:'Brand',Strategy:'Strategy',Campaign:'Plan',Idea:'Idea',Asset:'Content',Approval:'Review',Post:'Post',Ad:'Ad',Metric:'Number',Report:'Report',Learning:'Lesson',Task:'Task'};
 
-export function askText(reason){
- if(reason==='split')return 'That is two requests. Which should I do first?';
- if(reason==='act')return 'Do you want me to explain it, or do it?';
+export function askText(reason,client){
+ const name=client?.name||'this workspace';
+ if(reason==='split')return 'That is two requests. Which should I do first for '+name+'?';
+ if(reason==='act')return 'Do you want me to explain it for '+name+', or do it?';
  if(reason==='forbidden')return 'I can’t approve, decline, delete, move a client, change people or settings, export, or switch client. A reviewer does that on the Review page, or you can use the existing screens.';
  if(reason==='label')return 'I need you to say whether that number is real, estimated, or inferred. I won’t pick the label.';
- if(reason==='unavailable')return 'Routing is unavailable. The steps on the left still work.';
- if(reason==='empty')return 'There is nothing in that group I can do on this client.';
- return 'I can look something up, change this client, start a draft, or talk it through. Which do you want?';
+ if(reason==='unavailable')return `I can still work from what’s saved for ${name}. Ask about the brand, what’s missing, or the next marketing step.`;
+ if(reason==='empty')return 'There is nothing in that group I can do on '+name+'.';
+ return 'I can look something up, change this workspace, start a draft, or talk it through. Which do you want for '+name+'?';
 }
 
 export function fieldQuestion(field){return field.label;}
@@ -21,14 +22,18 @@ export function resultText(tool,result,client){
  const name=client?.name||'this client';
  if(tool.id==='set_brand_kit'){
   const colors=result.data?.colors?.length||0,fonts=result.data?.fonts_found?.length||0,sources=result.data?.source_names?.length||0;
-  return `Brand kit saved successfully for ${name}.${sources?` I used ${sources} source file${sources===1?'':'s'}.`:''}${colors?` ${colors} colour${colors===1?'':'s'}`:''}${fonts?` and ${fonts} font${fonts===1?' was':'s were'} found.`:colors?` ${colors===1?'was':'were'} found.`:''}\n\nNext step: create the marketing strategy. I’ll use this brand kit automatically.`;
+  const next=client?.node_type==='product'?'product strategy':client?.node_type==='brand'?'brand strategy':'client strategy';
+  return `Brand kit saved successfully for ${name}.${sources?` I used ${sources} source file${sources===1?'':'s'}.`:''}${colors?` ${colors} colour${colors===1?'':'s'}`:''}${fonts?` and ${fonts} font${fonts===1?' was':'s were'} found.`:colors?` ${colors===1?'was':'were'} found.`:''}\n\nNext step: create the ${next} for this workspace. I’ll use this brand kit automatically.`;
  }
  if(tool.id==='list_items'){
   const n=result.rows.length;
   if(result.kind==='Approval'&&result.status==='awaiting_review')return n?`${n} waiting for review for ${name}.`:`Nothing is waiting for review for ${name}.`;
   return n?`${n} ${KIND[result.kind]||result.kind} records for ${name}.`:`No ${KIND[result.kind]||result.kind} records for ${name}.`;
  }
- if(tool.id==='get_context')return `${name} · ${result.path}. You are ${result.role}. Next: ${result.missing}.`;
+ if(tool.id==='get_context'){
+  const kind=client?.node_type==='product'?'Product':client?.node_type==='brand'?'Brand':'Client';
+  return `${kind} ${name} · ${result.path}. You are ${result.role}. Next: ${result.missing}.`;
+ }
  if(tool.id==='ready_check'){
   const r=result.ready||{};
   const missing=(r.items||[]).filter(i=>!i.ok).map(i=>'• '+i.label+(i.detail?' — '+i.detail:'')).join('\n');

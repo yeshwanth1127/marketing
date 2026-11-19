@@ -7,10 +7,10 @@ import {allTools,visibleTools} from '../core/agent/catalog.mjs';
 import {assertIntakeSamples} from '../core/agent/intake.mjs';
 import {gateStageOne,interpret,setJevStub} from '../core/agent/router.mjs';
 import {setOpenRouterOff} from '../core/agent/openrouter.mjs';
-import {buildPack,setClaudeGate,setTalkRunner,talkPrompt,talkSpawnArgs as talkArgs} from '../core/agent/talk.mjs';
+import {buildPack,localTalk,setClaudeGate,setTalkRunner,talkPrompt,talkSpawnArgs as talkArgs} from '../core/agent/talk.mjs';
 import {runGenerateJob} from '../core/agent/jobs.mjs';
 import {resolveClient} from '../core/clients/tree.mjs';
-import {wantsGuidance} from '../core/agent/guide.mjs';
+import {wantsGuidance,wantsTalk} from '../core/agent/guide.mjs';
 import {runStrategyPipeline} from '../core/runtime/strategy.mjs';
 import {createProgress} from '../core/runtime/progress.mjs';
 setOpenRouterOff(true);
@@ -46,6 +46,9 @@ test('Intake samples pass the real validators',()=>{assert.doesNotThrow(()=>asse
 test('Guidance questions skip vague routing',()=>{
  assert.equal(wantsGuidance('what is left for this clients onboarding'),true);
  assert.equal(wantsGuidance('why are leads dropping?'),false);
+ assert.equal(wantsTalk('Hi'),true);
+ assert.equal(wantsTalk('hello!'),true);
+ assert.equal(wantsTalk('why are leads dropping?'),false);
 });
 test('Talk spawn uses an empty tool list and the small model',()=>{
  const args=talkArgs();
@@ -54,6 +57,9 @@ test('Talk spawn uses an empty tool list and the small model',()=>{
  assert.equal(args.at(-1),'{"mcpServers":{}}');
  assert.equal(args.join(' ').includes('mcp__exora'),false);
  assert.match(talkPrompt({pinned:{name:'Noolrun'},metrics:{rows:[]}},'why'),/only the JSON pack/);
+ assert.match(localTalk({pinned:{name:'Fabblen',type:'brand',city:'Tirupur'},missing:'brand kit',brand:{}},'hi'),/Fabblen/);
+ assert.match(localTalk({pinned:{name:'Fabblen',type:'brand'},missing:'brand kit',brand:{}},'hi'),/brand kit/);
+ assert.doesNotMatch(localTalk({pinned:{name:'Fabblen',type:'brand'},missing:'brand kit',brand:{}},'hi'),/Routing is unavailable/);
 });
 test('Fixtures route to the expected tool, including Hindi and Hinglish',()=>{
  const tools=toolsFor('admin');
@@ -234,6 +240,7 @@ test('Strategy stages run in order and Growth Plan reads the earlier results',as
  assert.equal(r.outputs[0].data.inputs_ledger.find(x=>x.field==='proof').status,'no_proof');
  assert.equal(r.outputs[0].data.inputs_ledger.find(x=>x.field==='budget_range').status,'not_provided');
  assert.deepEqual(saved.stages.map(s=>s.status),['done','done','done','done']);
+ assert.match(r.outputs[0].title,/Acme · Client strategy · \d{1,2} \w{3} \d{4}/);
  await assert.rejects(runStrategyPipeline({client:{name:'A',settings:{}},mod,input:{},workspace:{},sample:[{kind:'Strategy',title:'t',data:{}}],runner:async(c,m,sk)=>{if(sk[0].name==='offers')throw new Error('boom');return {outputs:[{kind:'Strategy',title:'x',data:{}}]};}}),/Stage 2 \(Offer design\) failed/);
  // Resume: stages 1-2 finished before a failure at stage 3; the retry starts at stage 3.
  const failing=createProgress(()=>{});let n=0;
@@ -325,10 +332,17 @@ test('Claude disconnected: talk asks to connect, and a read still answers',async
  res=await turn({message:"what's waiting for review?"});
  assert.match(res.result.text,/waiting for review/);
 });
-test('Routing is unavailable without a configured provider, and there is no tool-picking fallback',async()=>{
- setJevStub(null);setOpenRouterOff(true);const saved=process.env.TYPESAFE_API_KEY,provider=process.env.EXORA_ROUTER_PROVIDER;delete process.env.TYPESAFE_API_KEY;delete process.env.EXORA_ROUTER_PROVIDER;
- try{const res=await turn({message:'hello'});assert.match(res.result.text,/Routing is unavailable/);}
- finally{setOpenRouterOff(false);if(saved)process.env.TYPESAFE_API_KEY=saved;if(provider!==undefined)process.env.EXORA_ROUTER_PROVIDER=provider;}
+test('Without a router, the assistant still answers from the pinned workspace and does not pick a tool',async()=>{
+ setJevStub(null);setTalkRunner(null);setClaudeGate(()=>({connected:false}));setOpenRouterOff(true);const saved=process.env.TYPESAFE_API_KEY,provider=process.env.EXORA_ROUTER_PROVIDER;delete process.env.TYPESAFE_API_KEY;delete process.env.EXORA_ROUTER_PROVIDER;
+ try{
+  const res=await turn({message:'hello'});
+  assert.equal(res.error,undefined,JSON.stringify(res.error||res.result));
+  assert.match(res.result.text,/Agent |Next useful step|brand kit|workspace/i,res.result.text);
+  assert.doesNotMatch(res.result.text,/Routing is unavailable/);
+  assert.equal(res.result.talk,true);
+  assert.equal(res.result.tool,undefined);
+ }
+ finally{setOpenRouterOff(false);setClaudeGate(null);if(saved)process.env.TYPESAFE_API_KEY=saved;if(provider!==undefined)process.env.EXORA_ROUTER_PROVIDER=provider;}
 });
 test('Daily turn limit is enforced',async()=>{
  const used=(await q(`SELECT count(*)::int n FROM agent_messages m JOIN agent_threads t ON t.id=m.thread_id WHERE t.user_id=(SELECT id FROM users WHERE email='admin@exora.local') AND m.role='user' AND m.created_at>=(date_trunc('day', now() AT TIME ZONE 'Asia/Kolkata') AT TIME ZONE 'Asia/Kolkata')`)).rows[0].n;

@@ -4,12 +4,12 @@ import {visibleTools,toolById} from './catalog.mjs';
 import {companyMember,missingStep} from './context.mjs';
 import {routeMessage,RoutingUnavailable} from './router.mjs';
 import {execute,nextQuestion,prefill} from './execute.mjs';
-import {buildPack,talkAnswer} from './talk.mjs';
+import {buildPack,localTalk,talkAnswer} from './talk.mjs';
 import {askText,cardsFrom,confirmText,fieldQuestion,resultText} from './replies.mjs';
 import {buildGuidance,nextActions,wantsGuidance} from './guide.mjs';
 import {KEEP,isStrategyDraft,strategyConfirm,strategyDefaults,strategyQuestion} from './strategy-fields.mjs';
 
-const questionFor=(tool,args,field)=>isStrategyDraft(tool,args)?strategyQuestion(field,args):fieldQuestion(field);
+const questionFor=(tool,args,field,client)=>isStrategyDraft(tool,args)?strategyQuestion(field,args,client):fieldQuestion(field);
 const withDefaults=(tool,args,client)=>isStrategyDraft(tool,args)?strategyDefaults(args,client):args;
 
 const SKIP=/^(skip|none|no|n\/a)$/i;
@@ -37,8 +37,21 @@ async function saveThread(thread,patch){await q('UPDATE agent_threads SET slot=$
 async function say(thread,role,body,data={}){const mid=id();await q('INSERT INTO agent_messages(id,thread_id,role,body,data) VALUES($1,$2,$3,$4,$5)',[mid,thread.id,role,body,data]);return {id:mid,role,body,data};}
 
 function finish(decision,extra={}){
- if(decision.type==='refuse'||decision.type==='ask')return {text:decision.question||askText(decision.reason),data:{route:decision}};
+ if(decision.type==='refuse'||decision.type==='ask')return {text:decision.question||askText(decision.reason,extra.client),data:{route:decision}};
  return extra;
+}
+
+async function replyFromWorkspace(thread,ctx,send,message){
+ if(wantsGuidance(message)){await sendGuidance(thread,ctx,send,message);return;}
+ const pack=await buildPack(ctx.client,ctx.user,{threadId:thread.id,message});
+ let answer=null;
+ try{answer=await talkAnswer(pack,message);}catch{answer=null;}
+ const usable=answer?.text&&!answer.disconnected&&!/^Connect Claude/i.test(answer.text)&&!/could not answer just now/i.test(answer.text);
+ const text=usable?answer.text:localTalk(pack,message);
+ const actions=nextActions(ctx.client,ctx.user,ctx.tools,await missingStep(ctx.client),{});
+ await say(thread,'assistant',text,{talk:true,actions});
+ send('talk',{text,actions});
+ send('result',{text,actions,talk:true});
 }
 
 async function afterFields(thread,tool,args,ctx,send){
@@ -49,7 +62,7 @@ async function afterFields(thread,tool,args,ctx,send){
  if((tool.risk==='confirm'||strategy)&&tool.action!=='apply-brand-kit'){
   const pending={id:id(),tool:tool.id,args:clean};
   await saveThread(thread,{slot:null,pending});
-  const text=strategy?strategyConfirm(clean):confirmText(tool,clean);
+  const text=strategy?strategyConfirm(clean,ctx.client):confirmText(tool,clean);
   const message=await say(thread,'assistant',text,{confirm:true,pending:pending.id,tool:tool.id});
   send('confirm',{text,pending:pending.id,tool:tool.id});
   send('result',{text,message});
@@ -106,10 +119,10 @@ export async function runTurn({user,client,body,send,thread}){
    if(!tool)fail('That action is not available');
    let args={...(body.tool_args&&typeof body.tool_args==='object'?body.tool_args:{})};
    args=withDefaults(tool,prefill(tool,args,message,fileIds),client);
-   const field=nextQuestion(tool,args);
+   const field=nextQuestion(tool,args,client);
    if(field){
     await saveThread(thread,{slot:{tool:tool.id,args},pending:null});
-    const text=questionFor(tool,args,field);
+    const text=questionFor(tool,args,field,client);
     const actions=field.key==='file_ids'?[{id:tool.id+'-upload',label:'Upload brand files',tool:tool.id,args,needsUpload:true},{id:tool.id,label:'Use attached files',tool:tool.id,args}]:[{id:tool.id,label:'Continue',tool:tool.id,args}];
     await say(thread,'assistant',text,{ask:field.key,slot:tool.id,actions});
     send('ask',{text,field:field.key});
@@ -151,18 +164,18 @@ export async function runTurn({user,client,body,send,thread}){
    const tool=toolById(thread.slot.tool,tools);
    let args={...thread.slot.args};
    args=withDefaults(tool,prefill(tool,args,message,fileIds),client);
-   let field=nextQuestion(tool,args);
+   let field=nextQuestion(tool,args,client);
    if(!field){await afterFields(thread,tool,args,ctx,send);return;}
-   if(!message&&!fileIds.length){const text=questionFor(tool,args,field);const actions=field.key==='file_ids'?[{id:tool.id+'-upload',label:'Upload brand files',tool:tool.id,args,needsUpload:true},{id:tool.id,label:'Use attached files',tool:tool.id,args}]:[];await say(thread,'assistant',text,{ask:field.key,slot:tool.id,actions});send('ask',{text});send('result',{text});return;}
+   if(!message&&!fileIds.length){const text=questionFor(tool,args,field,client);const actions=field.key==='file_ids'?[{id:tool.id+'-upload',label:'Upload brand files',tool:tool.id,args,needsUpload:true},{id:tool.id,label:'Use attached files',tool:tool.id,args}]:[];await say(thread,'assistant',text,{ask:field.key,slot:tool.id,actions});send('ask',{text});send('result',{text});return;}
    if(!message&&fileIds.length&&field?.key==='file_ids'){await afterFields(thread,tool,args,ctx,send);return;}
    if(!field.required&&SKIP.test(message))args['__skip_'+field.key]=true;
    else if(args['__default_'+field.key]&&KEEP.test(message))args[field.key]=args['__default_'+field.key];
-   else if(field.required&&SKIP.test(message)){const text=questionFor(tool,args,field);await say(thread,'assistant',text,{ask:field.key});send('ask',{text});send('result',{text});return;}
+   else if(field.required&&SKIP.test(message)){const text=questionFor(tool,args,field,client);await say(thread,'assistant',text,{ask:field.key});send('ask',{text});send('result',{text});return;}
    else args[field.key]=message;
-   const more=nextQuestion(tool,args);
+   const more=nextQuestion(tool,args,client);
    if(more){
     await saveThread(thread,{slot:{tool:tool.id,args},pending:null});
-    const text=questionFor(tool,args,more);
+    const text=questionFor(tool,args,more,client);
     await say(thread,'assistant',text,{ask:more.key,slot:tool.id});
     send('ask',{text,field:more.key});
     send('result',{text});
@@ -175,7 +188,7 @@ export async function runTurn({user,client,body,send,thread}){
   let decision;
   try{decision=await routeMessage({message:message||'Use the attached file',user,client,tools,missing:await missingStep(client),lastQuestion:''});}
   catch(e){
-   if(e instanceof RoutingUnavailable||e.status===409){const text=askText('unavailable');await say(thread,'assistant',text,{});send('result',{text});return;}
+   if(e instanceof RoutingUnavailable||e.status===409){await replyFromWorkspace(thread,ctx,send,message||'What should I do next for this workspace?');return;}
    throw e;
   }
   send('route',{type:decision.type,tool:decision.tool?.id||null,reason:decision.reason||null});
@@ -197,7 +210,7 @@ export async function runTurn({user,client,body,send,thread}){
     await sendGuidance(thread,ctx,send,message);
     return;
    }
-   const text=decision.question||askText(decision.reason);
+   const text=decision.question||askText(decision.reason,ctx.client);
    const actions=decision.type==='ask'?nextActions(client,user,tools,await missingStep(client),{}):[];
    await say(thread,'assistant',text,{route:decision.type,reason:decision.reason,actions});
    send(decision.type==='ask'?'ask':'result',{text});
@@ -206,10 +219,10 @@ export async function runTurn({user,client,body,send,thread}){
   }
   const tool=decision.tool;
   let args=withDefaults(tool,prefill(tool,decision.args||{},message,fileIds),client);
-  const field=nextQuestion(tool,args);
+  const field=nextQuestion(tool,args,client);
   if(field){
    await saveThread(thread,{slot:{tool:tool.id,args},pending:null});
-   const text=questionFor(tool,args,field);
+   const text=questionFor(tool,args,field,client);
    await say(thread,'assistant',text,{ask:field.key,slot:tool.id});
    send('ask',{text,field:field.key});
    send('result',{text});

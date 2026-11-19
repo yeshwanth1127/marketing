@@ -69,9 +69,9 @@ export default function AgentChat({clientId,clientName,onOpen}:{clientId:string;
  };
  return <div className="agent-layout">
   <section className="agent-chat panel">
-   <div className="panel-title"><div><h2>Assistant</h2><span className="subtle">Pinned to {clientName}. I read what is saved, say what is next, then you tap an action.</span></div></div>
+   <div className="panel-title"><div><h2>Assistant</h2><span className="subtle">Free chat on {clientName}. Type anything. Guided assistant is the wizard that first picks client, brand or product, then asks the matching questions.</span></div><a className="text-button" href="/assistant">Guided assistant <ArrowUpRight size={13}/></a></div>
    <div className="agent-log" ref={scroller}>
-    {!messages.length&&<p className="agent-empty">Ask what is left to onboard, what is waiting for review, or why a number moved. Use the buttons to run the next step.</p>}
+    {!messages.length&&<p className="agent-empty">Ask what is left to onboard, what is waiting for review, or why a number moved. This chat stays on the current workspace and does not walk a classified wizard. Use Guided assistant when you want to choose a brand or product, then answer one field at a time.</p>}
     {messages.map(m=><div className={`agent-bubble ${m.role}`} key={m.id}>
      <p>{m.body}</p>
      {m.role==='assistant'&&m.data?.ask==='file_ids'&&<div className="agent-upload-inline"><label className="button primary"><Upload size={15}/>Upload brand files<input type="file" accept=".png,.jpg,.jpeg,.webp,.pdf,.ppt,.pptx,.txt,.csv" hidden multiple disabled={busy} onChange={e=>{attachMany(e.target.files);e.target.value='';}}/></label><span className="muted">PNG, PDF, PowerPoint, text, or CSV — up to 10 files.</span></div>}

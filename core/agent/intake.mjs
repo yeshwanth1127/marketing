@@ -4,31 +4,31 @@ import {fail,requireText} from '../db/index.mjs';
 // Hand-written questions. Required fields are always asked. The rest are asked one at a time
 // and can be skipped. Values are checked with the same validators the buttons use.
 export const companyFields=[
- {key:'name',required:true,label:'What is the company name?'},
- {key:'industry',required:true,label:'What industry are they in?'},
- {key:'city',required:true,label:'Which city are they in?'},
- {key:'region',required:false,label:'Which state? Karnataka, Maharashtra, Tamil Nadu, Delhi NCR, or Other. Reply skip to leave this out.'},
- {key:'website',required:false,label:'What is the website? Reply skip if there is none.'},
- {key:'languages',required:false,label:'Which languages should we post in? Reply skip to use English.'},
- {key:'notes',required:false,label:'Any notes? Reply skip if none.'},
+ {key:'name',required:true,label:'Client record — what is the company / client name? This is the account, not a brand or product.'},
+ {key:'industry',required:true,label:'Client record — what industry is this company in?'},
+ {key:'city',required:true,label:'Client record — which city is the company based in?'},
+ {key:'region',required:false,label:'Client record — which state? Karnataka, Maharashtra, Tamil Nadu, Delhi NCR, or Other. Reply skip to leave this out.'},
+ {key:'website',required:false,label:'Client record — what is the company website? Reply skip if there is none.'},
+ {key:'languages',required:false,label:'Client record — which languages should we post in by default? Reply skip to use English.'},
+ {key:'notes',required:false,label:'Client record — any notes about the account? Reply skip if none.'},
 ];
 export const brandFields=[
- {key:'name',required:true,label:'What is the brand name?'},
- {key:'industry',required:false,label:'Does this brand work in a different industry? Reply skip to keep the company industry.'},
- {key:'languages',required:false,label:'Which languages for this brand? Reply skip to keep the company languages.'},
- {key:'website',required:false,label:'Does this brand have its own website? Reply skip if not.'},
+ {key:'name',required:true,label:'Brand record — what is this brand’s customer-facing name? (Not the client company, not a product.)'},
+ {key:'industry',required:false,label:'Brand record — does this brand work in a different industry? Reply skip to keep the client industry.'},
+ {key:'languages',required:false,label:'Brand record — which languages for this brand? Reply skip to keep the client languages.'},
+ {key:'website',required:false,label:'Brand record — does this brand have its own website? Reply skip if not.'},
 ];
 export const productFields=[
- {key:'name',required:true,label:'What is the product name?'},
- {key:'description',required:true,label:'In one or two sentences, what is it?'},
- {key:'category',required:false,label:'What category is it? Reply skip if you would rather not say.'},
- {key:'sector',required:false,label:'Which sector should the ad-rules check use? Reply skip to keep the industry.'},
- {key:'audience',required:false,label:'Who buys it? Reply skip if unknown.'},
- {key:'offer',required:false,label:'What is the price or offer? Reply skip if you do not want one stated.'},
- {key:'selling_points',required:false,label:'Main selling points, one per line. Reply skip if none yet.'},
- {key:'variants',required:false,label:'Variants such as sizes or flavours, one per line. Reply skip if none.'},
- {key:'where_sold',required:false,label:'Where is it sold? Reply skip if unknown.'},
- {key:'evidence',required:false,label:'Proof for a claim, as: claim | source | date. Reply skip if there is no proof yet. I will not invent proof.'},
+ {key:'name',required:true,label:'Product record — what is the product or service name? (This is the offer, not the brand.)'},
+ {key:'description',required:true,label:'Product record — in one or two sentences, what is this product?'},
+ {key:'category',required:false,label:'Product record — what category is it? Reply skip if you would rather not say.'},
+ {key:'sector',required:false,label:'Product record — which sector should the ad-rules check use? Reply skip to keep the industry.'},
+ {key:'audience',required:false,label:'Product record — who buys this product? Reply skip if unknown.'},
+ {key:'offer',required:false,label:'Product record — what is the price or offer? Reply skip if you do not want one stated.'},
+ {key:'selling_points',required:false,label:'Product record — main selling points, one per line. Reply skip if none yet.'},
+ {key:'variants',required:false,label:'Product record — variants such as sizes or flavours, one per line. Reply skip if none.'},
+ {key:'where_sold',required:false,label:'Product record — where is it sold? Reply skip if unknown.'},
+ {key:'evidence',required:false,label:'Product record — proof for a claim, as: claim | source | date. Reply skip if there is no proof yet. I will not invent proof.'},
 ];
 export const detailFields=[
  {key:'name',required:false,label:'What should the name be? Reply skip to keep it.'},

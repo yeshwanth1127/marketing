@@ -143,7 +143,109 @@ test('Claude reel composition: HyperFrames project is kept and CLI runs are rece
   const asset={id:'00000000-0000-0000-0000-000000000002',title:'Hook',data:{type:'video',format:'reel',on_screen_text:['Before you book a dentist, ask this'],beat_sheet:{total_seconds:9.2,beats:[]}}};
   const res=await composeVideo({client:c,user,run:null,records:[],asset,brand:{colors:['#0f3d3e']},keepDir});
   assert.equal(res.seconds,10);assert.ok(fs.existsSync(path.join(res.dir,'index.html')));assert.ok(fs.existsSync(path.join(res.dir,'assets/gsap.min.js')));
+  assert.ok(res.gate?.ok);assert.ok(res.gate?.scenes>=3);assert.ok(res.gate?.captions);
+  for(const name of ['exora-design-system','motion-doctrine','hyperframes','hyperframes-cli','captions-overlay','media-use'])assert.ok(res.skills.includes(name),name);
   const rows=(await q('SELECT skill,script,source FROM tool_runs WHERE id=ANY($1::uuid[])',[res.receipts])).rows;
   assert.ok(rows.some(r=>r.skill==='hyperframes-cli'&&r.script==='hyperframes lint'&&r.source==='HF'),JSON.stringify(rows));
+  assert.ok(rows.some(r=>r.skill==='hyperframes-cli'&&String(r.script).includes('check')),JSON.stringify(rows));
+  assert.ok(rows.some(r=>/seam-stamp/.test(String(r.script))||r.skill==='motion-doctrine'),JSON.stringify(rows));
  }finally{delete process.env.EXORA_CLAUDE_BIN;}
+});
+
+test('video render always queues Claude design, even if the form asked for a template',async()=>{
+ process.env.EXORA_CLAUDE_BIN=path.join(ROOT,'tests/fake-claude.mjs');
+ try{
+  const {videoSkillsFor,composerFor}=await import('../core/design/compose.mjs');
+  const {loadModule}=await import('../core/runtime/index.mjs');
+  const {claudeState}=await import('../core/runtime/claude-cli.mjs');
+  const names=videoSkillsFor(loadModule('06-design-video',{settings:{}})).map(s=>s.name);
+  for(const name of ['exora-design-system','motion-doctrine','ad-creative','hyperframes','hyperframes-cli','captions-overlay','media-use'])assert.ok(names.includes(name),name);
+  assert.equal(composerFor('video',{requested:'template',connected:true}),'claude');
+  assert.equal(composerFor('video',{connected:false}),null);
+  assert.equal(composerFor('image',{requested:'template',connected:true}),'template');
+  const connected=claudeState(true).connected;
+  const copy=await action({action:'save-record',kind:'Asset',title:'Reel script',data:{type:'copy',script:'Ask this first',on_screen_text:['Ask this first']}});
+  assert.equal(copy.status,200,JSON.stringify(copy.data));
+  const rr=await action({action:'render',asset_id:copy.data.id,type:'video',format:'reel',layout:'auto',composer:'template'});
+  if(!connected){assert.equal(rr.status,409);assert.match(rr.data.error,/Connect your Claude account/);return;}
+  assert.equal(rr.status,200,JSON.stringify(rr.data));
+  const job=(await q("SELECT payload FROM jobs WHERE id=$1",[rr.data.job_id])).rows[0];
+  assert.equal(job.payload.composer,'claude');
+  assert.equal(rr.data.asset.data.composer,'claude');
+  await q("UPDATE jobs SET status='failed',error='test fail' WHERE id=$1",[rr.data.job_id]);
+  await q("UPDATE records SET data=coalesce(data,'{}'::jsonb)||$2::jsonb WHERE id=$1",[rr.data.asset.id,JSON.stringify({render_status:'failed',composer:'skills'})]);
+  const retry=await action({action:'retry-render',asset_id:rr.data.asset.id});
+  assert.equal(retry.status,200,JSON.stringify(retry.data));
+  assert.equal((await q("SELECT payload->>'composer' AS composer FROM jobs WHERE id=$1",[retry.data.job_id])).rows[0].composer,'claude');
+ }finally{delete process.env.EXORA_CLAUDE_BIN;}
+});
+
+test('render can use a dated idea, calendar plan, or undated writing',async()=>{
+ const ideaRow=await action({action:'save-record',kind:'Idea',title:'Find us: store hours',data:{slot_date:'2026-11-30',slot_format:'Carousel',selected_hook:0,hooks:[{text:'Find us: store details recap',score:80,formula:'Useful',rationale:'Hours and address'}]}});
+ assert.equal(ideaRow.status,200,JSON.stringify(ideaRow.data));
+ const fromIdea=await action({action:'render',idea_id:ideaRow.data.id,slot_date:'2026-11-30',type:'carousel',format:'portrait',layout:'auto',composer:'template'});
+ assert.equal(fromIdea.status,200,JSON.stringify(fromIdea.data));
+ assert.equal(fromIdea.data.asset.data.slot_date,'2026-11-30');
+ assert.match(String(fromIdea.data.asset.data.script||fromIdea.data.asset.data.on_screen_text?.[0]||''),/store details/);
+
+ const plan=await action({action:'save-record',kind:'Campaign',title:'Nov plan',data:{budget:1000,slots:[{date:'2026-11-01',time:'18:30',format:'Post',platform:'Instagram',topic:'Find us: Where to find fabblen'}]}});
+ assert.equal(plan.status,200,JSON.stringify(plan.data));
+ const fromPlan=await action({action:'render',campaign_id:plan.data.id,slot_date:'2026-11-01',type:'image',format:'portrait',layout:'auto',composer:'template'});
+ assert.equal(fromPlan.status,200,JSON.stringify(fromPlan.data));
+ assert.equal(fromPlan.data.asset.data.slot_date,'2026-11-01');
+ assert.match(String(fromPlan.data.asset.data.script),/fabblen/i);
+
+ const undated=await action({action:'save-record',kind:'Asset',title:'Undated script',data:{type:'copy',script:'Walk-in this weekend',on_screen_text:['Walk-in this weekend']}});
+ assert.equal(undated.status,200,JSON.stringify(undated.data));
+ const fromUndated=await action({action:'render',asset_id:undated.data.id,slot_date:'2026-11-16',type:'image',format:'portrait',layout:'auto',composer:'template'});
+ assert.equal(fromUndated.status,200,JSON.stringify(fromUndated.data));
+ assert.equal(fromUndated.data.asset.data.slot_date,'2026-11-16');
+});
+
+test('retry-render requeues a failed visual',async()=>{
+ const copy=await action({action:'save-record',kind:'Asset',title:'Retry script',data:{type:'copy',script:'Retry this',on_screen_text:['Retry this']}});
+ assert.equal(copy.status,200,JSON.stringify(copy.data));
+ const rr=await action({action:'render',asset_id:copy.data.id,type:'image',format:'portrait',layout:'auto',composer:'template'});
+ assert.equal(rr.status,200,JSON.stringify(rr.data));
+ await q("UPDATE jobs SET status='failed',error='test fail' WHERE id=$1",[rr.data.job_id]);
+ await q("UPDATE records SET data=coalesce(data,'{}'::jsonb)||$2::jsonb WHERE id=$1",[rr.data.asset.id,JSON.stringify({render_status:'failed',render_error:'test fail'})]);
+ const retry=await action({action:'retry-render',asset_id:rr.data.asset.id});
+ assert.equal(retry.status,200,JSON.stringify(retry.data));
+ assert.ok(retry.data.job_id);
+ assert.equal((await q("SELECT status FROM jobs WHERE id=$1",[retry.data.job_id])).rows[0].status,'queued');
+});
+
+test('reel screen copy rewrites placeholder find-us lines from brand facts',async()=>{
+ const {reelScreenCopy,cleanOnScreen}=await import('../core/design/compose.mjs');
+ assert.match(cleanOnScreen('Start at [landmark]. Follow me to the fabblen door.'),/Follow me to the fabblen door/);
+ const copy=reelScreenCopy({title:'Slot 13/18 · 2026-11-21 18:30 IST · Instagram Reel · Find us: one-take route from a nearby landmark to the fabblen door.',data:{type:'video',on_screen_text:['Start at [landmark]. Follow me to the fabblen door.'],script:'Start at [landmark]. Follow me to the fabblen door.'}},{name:'fabblen',city:'Bengaluru',industry:'textile'});
+ assert.match(copy.hook,/Looking for fabblen in Bengaluru/);
+ assert.doesNotMatch(copy.script,/\[landmark\]/);
+ assert.equal(copy.cta,'Get directions');
+ assert.ok(copy.rewrite_from_brief);
+ const kept=reelScreenCopy({title:'Hook',data:{type:'video',on_screen_text:['Before you book a dentist, ask this']}},{name:'Clinic',city:'Bengaluru'});
+ assert.match(kept.hook,/Before you book a dentist/);
+ assert.equal(kept.rewrite_from_brief,false);
+});
+
+test('skills reel composer writes a HyperFrames project with motion doctrine and captions',async()=>{
+ const fs=await import('node:fs');const os=await import('node:os');
+ const {composeVideoFromSkills,cleanOnScreen}=await import('../core/design/video-from-skills.mjs');
+ assert.match(cleanOnScreen('Start at [landmark]. Follow me to the fabblen door.'),/Follow me to the fabblen door/);
+ const keepDir=fs.mkdtempSync(path.join(os.tmpdir(),'skills-reel-'));
+ try{
+  const res=await composeVideoFromSkills({client:{name:'fabblen',brand_name:'fabblen',industry:'Clothing',city:'Bengaluru'},asset:{title:'Find us: one-take route from a nearby landmark to the fabblen door.',data:{type:'video',format:'reel',on_screen_text:['Start at [landmark]. Follow me to the fabblen door.'],script:'Start at [landmark]. Follow me to the fabblen door.',cta:'Get directions',target_seconds:12}},brand:{colors:['#ffffff','#191617','#f86818']},keepDir});
+  assert.equal(res.composer,'skills');
+  assert.ok(fs.existsSync(path.join(res.dir,'index.html')));
+  assert.ok(fs.existsSync(path.join(res.dir,'ledger.json')));
+  assert.ok(fs.existsSync(path.join(res.dir,'compositions','hook.html')));
+  const html=fs.readFileSync(path.join(res.dir,'index.html'),'utf8');
+  const hook=fs.readFileSync(path.join(res.dir,'compositions','hook.html'),'utf8');
+  assert.match(html,/data-fps="30"/);
+  assert.match(html,/seams:auto/);
+  assert.match(html,/data-track-kind="captions"/);
+  assert.doesNotMatch(html,/\[landmark\]/);
+  assert.match(hook,/Looking for fabblen in Bengaluru/);
+  for(const name of ['exora-design-system','motion-doctrine','hyperframes','captions-overlay'])assert.ok(res.skills.includes(name),name);
+ }finally{fs.rmSync(keepDir,{recursive:true,force:true});}
 });

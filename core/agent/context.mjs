@@ -9,7 +9,7 @@ export async function missingStep(client){
  const steps=[
   ['brief',client.node_type==='product'?!!client.data?.brief?.description:!!(client.name&&client.industry&&client.city)],
   ['brand kit',any(records,'BrandKit')],
-  ['strategy',own(records,client,'Strategy',r=>r.status==='approved')],
+  ['strategy',own(records,client,'Strategy',r=>r.status==='approved'||!!r.data?.finalized_at)],
   ['monthly plan',own(records,client,'Campaign')],
   ['hooks',own(records,client,'Idea')],
   ['writing',own(records,client,'Asset',r=>(r.data?.type||'copy')==='copy')],

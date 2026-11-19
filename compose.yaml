@@ -30,6 +30,7 @@ services:
       NODE_ENV: production
       EXORA_PUBLIC_ORIGIN: ${EXORA_PUBLIC_ORIGIN:-https://marketing.exora.solutions}
       META_REDIRECT_URI: ${META_REDIRECT_URI:-https://marketing.exora.solutions/api/auth/meta/callback}
+      EXORA_ROUTER_PROVIDER: ${EXORA_ROUTER_PROVIDER:-claude}
     volumes:
       - ./data/local:/app/.local
       - claude_home:/root
@@ -50,6 +51,7 @@ services:
     environment:
       DATABASE_URL: postgresql://exora:${POSTGRES_PASSWORD}@postgres:5432/exora_marketing
       NODE_ENV: production
+      EXORA_ROUTER_PROVIDER: ${EXORA_ROUTER_PROVIDER:-claude}
     volumes:
       - ./data/local:/app/.local
       - claude_home:/root

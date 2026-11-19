@@ -1,7 +1,7 @@
 import {choice,noul,TypeSafeClient} from '@typesafe-ai/sdk';
 import {GROUPS,draftStepOptions} from './catalog.mjs';
 import {openrouterChat,openrouterKey,openrouterModel,parseModelJson,routeAnswers,routePrompt} from './openrouter.mjs';
-import {wantsGuidance} from './guide.mjs';
+import {wantsGuidance,wantsTalk} from './guide.mjs';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
@@ -146,6 +146,7 @@ export async function routeMessage({message,user,client,tools,missing,lastQuesti
  const {routerState}=await import('./context.mjs');
  const state=routerState({message,user,client,missing,lastQuestion});
  if(wantsGuidance(message))return {type:'guide'};
+ if(wantsTalk(message))return {type:'talk'};
  const groups=['talk',...new Set(tools.map(t=>t.group))];
  const stage1=await askJev(state,stageOneQuestions(groups));
  const gated=gateStageOne(stage1,tools);
