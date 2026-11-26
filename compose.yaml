@@ -71,7 +71,7 @@ services:
       web:
         condition: service_started
     restart: unless-stopped
-    mem_limit: 2048m
+    mem_limit: ${WORKER_MEM_LIMIT:-2048m}
     logging:
       driver: json-file
       options: { max-size: "20m", max-file: "5" }

@@ -14,7 +14,15 @@ Evidence rules for this stage:
 - Anything you add that is not in inputs_ledger, the records or foundations goes into data.assumptions as {"item","reason"}.
 - Keep every proof gap visible in data.proof_missing or data.gaps. No research was done; do not imply it was.
 - If workspace.input.validation exists, its marketer decisions and corrections are authoritative. Apply them and do not restore rejected assumptions.
+{length}
 Write exactly ONE object of kind Strategy. Title it exactly: {title}` ;
+
+// Run time is almost entirely the model writing text, so default to compact output.
+// EXORA_STRATEGY_DEPTH=full restores the long form. EXORA_STRATEGY_MODEL and EXORA_STRATEGY_EFFORT
+// (low, medium, high, xhigh, max) override the per-stage defaults below.
+const depth=()=>String(process.env.EXORA_STRATEGY_DEPTH||'').toLowerCase()==='full'?'full':'concise';
+const LENGTH={concise:'Be concise: write each text field in 1 to 3 sentences, keep lists to at most 5 items, leave out any field you have no evidence for instead of padding it, and do not restate earlier stages.',full:''};
+const GROWTH_WORDS={concise:'about 900 words',full:'about 2,500 words'};
 
 export const STRATEGY_STAGES=[
  {key:'positioning',label:'Positioning audit',skills:inputs=>inputs.competitors?['positioning-audit','competitor-positioning']:['positioning-audit'],
@@ -33,7 +41,7 @@ Any benchmark number is labelled "industry benchmark, unverified", never present
   task:`Run the growth-plan skill LAST, as the synthesis of the stages above.
 In this EXORA workspace its pre-conditions map to: Core Doc 3.1 Business analysis → client + inputs (business_model, objective, constraints); Core Doc 3.2 Segmentation → foundations.positioning.audience; Core Doc 3.3 Positioning → foundations.positioning; the offer → foundations.offer; Core Doc 3.4 DMFlow and channel documents → foundations.funnel + inputs channels; Part 7 KPI tree → inputs success_measure + foundations.funnel KPIs; budget → inputs budget_range; team → inputs team.
 Referenced context-engine files, PDF/DOCX exports and save paths are not available here: ignore them. Do not refuse because Part 1–7 documents are absent. Write every section from what exists, list each missing source in data.gaps and each assumed number in data.assumptions.
-Every forecast states its assumptions. If budget_range is not_provided, give scenarios as ranges labelled assumption. Synthesise; do not restate the foundations. Keep body under about 2,500 words.`},
+Every forecast states its assumptions. If budget_range is not_provided, give scenarios as ranges labelled assumption. Synthesise; do not restate the foundations. Keep body under {words}.`,effort:'medium'},
 ];
 
 export function stageSample(stage,client,base){
@@ -45,7 +53,7 @@ export function stageSample(stage,client,base){
 
 const summaryOf=d=>String(d.positioning_statement||d.offer_summary||d.conversion_path||d.executive_summary||'').slice(0,300);
 
-export async function runStrategyPipeline({client,user,run,records,workspace,mod,input,sample,progress,runner=runAgent}){
+export async function runStrategyPipeline({client,user,run,records,workspace,attachments,history,mod,input,sample,progress,runner=runAgent}){
  const inputs=strategyInputs(input.inputs||{});
  const ledger=inputsLedger(inputs,client);
  const scope=strategyScope(client);
@@ -72,8 +80,10 @@ export async function runStrategyPipeline({client,user,run,records,workspace,mod
   const started=Date.now();
   try{
    const ws={...workspace,inputs_ledger:ledger,foundations};
-   const extra=COMMON.replace('{n}',String(i+1)).replaceAll('{level}',scope.title.toLowerCase()).replace('{altitude}',scope.altitude).replace('{title}',strategyDatedTitle(client))+'\n'+stage.task;
-   const res=await runner({client,user,run,records,workspace:ws},mod,skills,stageSample(stage,client,sample),{extra,files:{'foundations.json':JSON.stringify(foundations,null,1)},onEvent:progress?e=>progress.event(e):undefined});
+   const mode=depth();
+   const extra=COMMON.replace('{n}',String(i+1)).replaceAll('{level}',scope.title.toLowerCase()).replace('{altitude}',scope.altitude).replace('{length}',LENGTH[mode]).replace('{title}',strategyDatedTitle(client))+'\n'+stage.task.replace('{words}',GROWTH_WORDS[mode]);
+   const stageOutput=stageSample(stage,client,sample);
+   const res=await runner({client,user,run,records,workspace:ws,attachments,history},mod,skills,stageOutput,{taskType:stage.label,extra,files:{'foundations.json':JSON.stringify(foundations)},onEvent:progress?e=>progress.event(e):undefined,knownFiles:true,model:process.env.EXORA_STRATEGY_MODEL,effort:process.env.EXORA_STRATEGY_EFFORT||stage.effort||'low'});
    const out=one.parse(res.outputs).find(o=>o.kind==='Strategy');
    if(!out)throw new Error('it did not return a strategy section');
    receipts.push(...(res.receipts||[]));

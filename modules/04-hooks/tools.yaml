@@ -7,6 +7,7 @@ scripts:
     file: hookscore.py
     mode: direct          # our code supplies the hooks; output stored as-is
     args: ["-", "--json"]
+    ok_exit_codes: [0, 1]   # hookscore.py exits 1 when no hook scores 70 and still prints its JSON scores
     input: one hook per line on stdin
     output: json
     timeout_ms: 20000

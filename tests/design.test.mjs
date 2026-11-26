@@ -8,8 +8,8 @@ const read=f=>JSON.parse(fs.readFileSync(new URL('../exora/brand-profiles/test/'
 const samples=JSON.parse(fs.readFileSync(new URL('../exora/design-system/samples.json',import.meta.url),'utf8'));
 const dental=profileFor(read('kaveri-dental'),{name:'Kaveri'}),fashion=profileFor(read('ruh-atelier'),{name:'Ruh'});
 
-test('ten layout types, each composes in every placement for every test brand',()=>{
- assert.equal(Object.keys(LAYOUTS).length,10);
+test('eleven layout types, each composes in every placement for every test brand',()=>{
+ assert.equal(Object.keys(LAYOUTS).length,11);
  for(const pr of [dental,fashion])for(const l of Object.keys(LAYOUTS))for(const format of ['portrait','square','reel','landscape']){
   const html=compose({layout:l,slots:samples['kaveri-dental'][l],profile:pr,catalog:catalog(),format});assert.ok(html.length>=1,l);
   for(const h of html){assert.match(h,/^<!doctype html>/);assert.doesNotMatch(h,/(?:src|href)=["']?(?:https?:)?\/\/|url\(["']?https?:/,'no remote files');}}
@@ -55,7 +55,7 @@ async function request(route,body){const r=await handle(new Request('http://loca
 test('API: design catalog, live brand preview and profile validation',async()=>{
  const r=await handle(new Request('http://localhost:3100/api/auth/login',{method:'POST',headers:{'content-type':'application/json',origin:'http://localhost:3100'},body:JSON.stringify({email:'admin@exora.local',password:'ExoraLocal!2026'})}));cookie=r.headers.get('set-cookie').split(';')[0];
  client=(await request('action',{action:'create-client',name:'Design Test '+Date.now(),industry:'Fashion label',city:'Jaipur',languages:['English','Hindi']})).data.id;
- const cat=await request('design-catalog?client='+client);assert.equal(cat.status,200);assert.equal(cat.data.layouts.length,10);assert.ok(cat.data.fonts.length>=20);
+ const cat=await request('design-catalog?client='+client);assert.equal(cat.status,200);assert.equal(cat.data.layouts.length,11);assert.ok(cat.data.fonts.length>=20);
  const bad=await request('action',{client_id:client,action:'save-record',kind:'BrandKit',title:'Ruh',data:{colors:['#ebe4d6'],profile:{type:{display:{font:'comic-sans'}}}}});
  assert.equal(bad.status,400);assert.match(bad.data.error,/Unknown font/);
  const prof=read('ruh-atelier').profile;

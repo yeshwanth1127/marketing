@@ -1,6 +1,11 @@
 // EXORA design engine. compose() turns a layout + slots + brand profile into one HTML document per frame.
-import {LAYOUTS} from './layouts/index.mjs';import {context,document,CANVAS} from './frame.mjs';import {normalize,audit,css,tones,rolesFromPalette} from './profile.mjs';
-export {LAYOUTS,CANVAS,normalize,audit,css,tones,rolesFromPalette};
+import {LAYOUTS,lintCampaign} from './layouts/index.mjs';import {context,document,CANVAS} from './frame.mjs';import {normalize,audit,css,tones,rolesFromPalette} from './profile.mjs';
+export {LAYOUTS,CANVAS,normalize,audit,css,tones,rolesFromPalette,lintCampaign};
+// Rule check on the slots of a layout that has hard rules (campaign). Other layouts return [].
+export function lintSlots({layout,slots={}}){
+ if(layout!=='campaign')return [];
+ const L=LAYOUTS.campaign;return L.frames(slots).flatMap((f,i)=>lintCampaign(f).map(x=>({...x,frame:i+1})));
+}
 export function compose({layout,slots={},profile,catalog,format='portrait',fontBase='fonts',logoBase='',series=''}){
  const L=LAYOUTS[layout];if(!L)throw new Error(`Unknown layout "${layout}". Use one of: ${Object.keys(LAYOUTS).join(', ')}`);
  const frames=L.frames(slots,format);

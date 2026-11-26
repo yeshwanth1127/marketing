@@ -4,7 +4,6 @@ import {perform} from '../api.mjs';
 import {ROOT,fail,q} from '../db/index.mjs';
 import {brandFor,descendantsOf,nodeBrief} from '../clients/tree.mjs';
 import {computeMetrics,summarizeMetrics} from '../memory/index.mjs';
-import {claudeState} from '../runtime/claude-cli.mjs';
 import {describe as describeLayouts,catalog as fontCatalog} from '../design/brand-profile.mjs';
 import {DRAFT_STEPS} from './catalog.mjs';
 import {parseMetricsCsv} from './csv.mjs';
@@ -58,7 +57,7 @@ async function readFile(client,fileId){
  return fs.readFileSync(full,'utf8');
 }
 
-function provider(){return process.env.EXORA_AGENT_DRAFT||(claudeState().connected?'claude':'local_template');}
+function provider(client,selected){const value=selected||client?.settings?.default_provider||process.env.EXORA_AGENT_DRAFT||'claude';if(!['claude','codex','local_template'].includes(value))throw new Error('Choose exactly one generation provider');return value;}
 
 export async function execute(tool,raw,ctx){
  if(isStrategyDraft(tool,raw))raw={...raw,brief:strategyBrief(strategyInputs(raw),raw.brief&&!String(raw.brief).includes('objective: ')?raw.brief:'',ctx.client)};
@@ -139,9 +138,9 @@ export async function execute(tool,raw,ctx){
    const saved=await call(user,client,{action:'apply-brand-kit',file_ids});
    return {...saved,rows:saved.rows||[{id:saved.record?.id,kind:'BrandKit',title:saved.record?.title,status:saved.record?.status||'draft'}]};
   }
-  case 'draft':if(args.step==='strategy')return call(user,client,{action:'generate',as_job:true,module:DRAFT_STEPS.strategy,provider:provider(),brief:args.brief,inputs:strategyInputs(args),language:args.language||client.languages?.[0]||'English'});
-  return call(user,client,{action:'generate',as_job:true,module:DRAFT_STEPS[args.step],provider:provider(),brief:args.brief,language:args.language||client.languages?.[0]||'English',format:args.format||'Reel'});
-  case 'write-report':return call(user,client,{action:'generate',as_job:true,module:'09-results',provider:provider(),brief:args.brief,language:client.languages?.[0]||'English'});
+  case 'draft':if(args.step==='strategy')return call(user,client,{action:'generate',as_job:true,module:DRAFT_STEPS.strategy,provider:provider(client,args.provider),thread_id:ctx.threadId,file_ids:ctx.fileIds,brief:args.brief,inputs:strategyInputs(args),language:args.language||client.languages?.[0]||'English'});
+  return call(user,client,{action:'generate',as_job:true,module:DRAFT_STEPS[args.step],provider:provider(client,args.provider),thread_id:ctx.threadId,file_ids:ctx.fileIds,brief:args.brief,language:args.language||client.languages?.[0]||'English',format:args.format||'Reel'});
+  case 'write-report':return call(user,client,{action:'generate',as_job:true,module:'09-results',provider:provider(client,args.provider),thread_id:ctx.threadId,file_ids:ctx.fileIds,brief:args.brief,language:client.languages?.[0]||'English'});
   case 'save-item':{
    const row=(await q('SELECT * FROM records WHERE id=$1 AND client_id=$2',[args.id,client.id])).rows[0];
    if(!row)fail('Record not found',404);
@@ -151,7 +150,7 @@ export async function execute(tool,raw,ctx){
   }
   case 'revise':return call(user,client,{action:'revise',id:args.id});
   case 'choose-hook':return call(user,client,{action:'choose-hook',id:args.id,index:Number(args.index)});
-  case 'render':return call(user,client,{action:'render',asset_id:args.asset_id,type:args.type,format:args.format,layout:args.layout||'auto',composer:args.type==='video'?'claude':(args.composer||'claude')});
+  case 'render':return call(user,client,{action:'render',asset_id:args.asset_id,type:args.type,format:args.format,layout:args.layout||'auto',composer:args.composer||client.settings?.default_provider||'claude'});
   case 'clean-media':return call(user,client,{action:'clean-media',file_id:args.file_id,licence:args.licence});
   case 'submit-approval':return call(user,client,{action:'submit-approval',id:args.id});
   case 'schedule':return call(user,client,{action:'schedule',asset_id:args.asset_id,platform:args.platform,scheduled_at:args.scheduled_at,to:args.to});

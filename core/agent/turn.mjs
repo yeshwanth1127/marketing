@@ -112,7 +112,7 @@ export async function runTurn({user,client,body,send,thread}){
  const fileIds=Array.isArray(body.file_ids)?body.file_ids.slice(0,10):[];
  const member=await companyMember(user,client);
  const tools=visibleTools(user,client,{companyMember:member});
- const ctx={user,client,tools,fileIds};
+ const ctx={user,client,tools,fileIds,threadId:thread.id};
  try{
   if(body.tool){
    const tool=toolById(String(body.tool),tools);

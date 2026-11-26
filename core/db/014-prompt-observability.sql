@@ -1,0 +1,3 @@
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS prompt_metadata jsonb NOT NULL DEFAULT '{}';
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS model text;
+ALTER TABLE runs ADD COLUMN IF NOT EXISTS duration_ms integer;

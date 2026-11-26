@@ -1,6 +1,6 @@
 ---
 name: exora-design-system
-description: EXORA's brand-neutral design method for static posts, carousels, ad creatives and reel frames. Ten layout types driven entirely by the client's brand profile (brand.json). Load before composing any visual.
+description: EXORA's brand-neutral design method for static posts, carousels, ad creatives and reel frames. Eleven layout types driven by the client's brand profile (brand.json), including a studio campaign layout for apparel and other physical products. Load before composing any visual.
 ---
 
 # EXORA design system (v1)
@@ -43,6 +43,26 @@ There is NO internet. Use only files in this folder: fonts are in `fonts/`, the 
 | `behind-scenes` | a field note: time, place, someone's own words | paper |
 | `proof` | testimonial; a stat only if it is in `copy.json` evidence | ink |
 | `event` | workshops, open days, launches: the date is the hero | paper |
+| `campaign` | **apparel and other physical products.** A studio lookbook post: a real product is the hero, one short uppercase headline, one support line, four corner labels. Use it for product launches, styling tips, comparisons and carousels. See "Campaign posts" below | stone / grey / charcoal studio |
+
+## Campaign posts (`campaign`)
+For clothing, footwear, jewellery and other products the post must look like a real studio campaign, not a template. The layout draws the studio:
+backdrop gradient, vignette, film grain, the product with a soft contact shadow, a small ornament, the headline, the support line, four corner
+labels and the brand mark. You choose the words and the image.
+
+- **Product image first.** `assets.json` lists the client's real product photos in `assets/`. Open each with Read. A photo goes in slot `photo`
+  (full bleed; keep the top third calm). A PNG with a real transparent background goes in slot `cutout`. Never redraw, stylise or invent a product.
+- **No product image?** Do not fake one with icons, illustration or emoji. Leave `photo` and `cutout` out: the layout makes a typographic poster
+  (massive headline, fabric texture, grain). Write `"needs_product_image": true` in design.json so the team is asked for a photo.
+- **Headline** 2 to 4 words (5 at most), uppercase, one line, the only big type. **Support line** one short sentence, two lines at most.
+- **Four corner labels** `[top-left, top-right, bottom-left, bottom-right]`, e.g. `["LIMITED RELEASE","NOV 2026","NEVER BASIC","SHOP NOW"]`.
+  Only facts the copy supports: never invent a date, "limited" or "sold out".
+- **Under 25 words** on the canvas. Margins at least 6%. Neutral base plus at most one accent, and that accent comes from the product (slot `accent`).
+- **Styling tip** ("what to wear to a wedding function"): show 3 to 4 garments; the headline states the opinion ("SKIP THE POLO"); the rules and reasons go in the caption.
+
+**Banned on campaign posts** (the preview and the final render fail them as errors): bordered cards, numbered coloured circles, checklists on the image,
+buttons, pills or arrows, emoji, stock icons, clipart, neon or multi-colour accents, a headline over 5 words or a second headline, and the filler
+phrases elevate, unlock, seamless, game-changer, level up, effortless, curated, redefine, unleash.
 
 ## Grammar (applies to every layout)
 1. **Hierarchy**: one hero element per frame (headline, price, date, numeral or quote). Everything else is

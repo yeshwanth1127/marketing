@@ -1,1 +1,3 @@
 *.sh text eol=lf
+# The fake Claude used by the tests is run as a program (#!/usr/bin/env node); CRLF breaks its shebang in Docker and on macOS.
+tests/fake-claude.mjs text eol=lf

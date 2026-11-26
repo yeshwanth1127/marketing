@@ -19,6 +19,35 @@ export function python(){
  const venv=path.join(ROOT,'.local/pyenv/bin/python');
  return process.env.EXORA_PYTHON||(fs.existsSync(venv)?venv:'python3');
 }
+// Whether the content-quality scorers (content quality, brand voice, readability) can run: they need textstat, nltk and NLTK's data.
+// Cached for a minute. Never throws: a failed probe reports the reason.
+let depsCache={at:0,value:null};
+const DEPS_PROBE=`import json
+out={"missing":[]}
+for m in ("textstat","nltk"):
+    try:
+        __import__(m)
+    except Exception:
+        out["missing"].append(m)
+if "nltk" not in out["missing"]:
+    import nltk
+    for p in ("tokenizers/punkt_tab","corpora/cmudict","corpora/stopwords"):
+        try:
+            nltk.data.find(p)
+        except LookupError:
+            out["missing"].append("nltk data: "+p)
+print(json.dumps(out))`;
+export function pythonDepsStatus({force=false}={}){
+ if(!force&&depsCache.value&&Date.now()-depsCache.at<60000)return depsCache.value;
+ let value;
+ try{
+  const nltk=nltkDataDir();
+  const r=spawnSync(python(),['-I','-c',DEPS_PROBE],{encoding:'utf8',timeout:20000,env:{PATH:process.env.PATH||'/usr/bin:/bin',LANG:'C.UTF-8',HOME:os.tmpdir(),...(nltk?{NLTK_DATA:nltk}:{})}});
+  if(r.error||r.status!==0)value={ok:false,missing:['python could not be run: '+String(r.error?.message||r.stderr||'exit '+r.status).slice(0,200)]};
+  else{const o=JSON.parse(r.stdout.trim().split('\n').pop());value={ok:!o.missing.length,missing:o.missing};}
+ }catch(e){value={ok:false,missing:['probe failed: '+String(e.message).slice(0,200)]};}
+ depsCache={at:Date.now(),value};return value;
+}
 export function scriptSpec(mod,scriptId){
  const spec=(mod.tools?.scripts||[]).find(s=>s.id===scriptId);
  if(!spec){const e=new Error(`Tool ${scriptId} is not declared for ${mod.key}`);e.status=400;throw e;}
@@ -27,11 +56,16 @@ export function scriptSpec(mod,scriptId){
 // ffmpeg/ffprobe for media tools: the configured FFMPEG_BIN folder and the bundled ffprobe.
 function mediaBins(){const out=[];if(process.env.FFMPEG_BIN)out.push(path.dirname(process.env.FFMPEG_BIN));out.push(path.join(process.env.HOME||'','.local/bin'));const fp=path.join(ROOT,'node_modules/@ffprobe-installer',`${process.platform}-${process.arch}`);if(fs.existsSync(fp))out.push(fp);return out;}
 // Network is not available to skill scripts: proxies point at a closed local port.
+// NLTK data: the Docker image bakes it in at /opt/exora-nltk (NLTK_DATA); a local setup keeps it in .local/nltk_data.
+export function nltkDataDir(){
+ for(const d of [process.env.NLTK_DATA,path.join(ROOT,'.local/nltk_data')])if(d&&fs.existsSync(d))return d;
+ return null;
+}
 function sandboxEnv(box){
  const dead='http://127.0.0.1:9';
- const nltk=path.join(ROOT,'.local/nltk_data');
+ const nltk=nltkDataDir();
  return {PATH:[...mediaBins(),'/usr/local/bin','/opt/homebrew/bin','/usr/bin','/bin'].join(':'),HOME:box,TMPDIR:box,LANG:'C.UTF-8',LC_ALL:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTHONIOENCODING:'utf-8',
-  ...(fs.existsSync(nltk)?{NLTK_DATA:nltk}:{}),
+  ...(nltk?{NLTK_DATA:nltk}:{}),
   http_proxy:dead,https_proxy:dead,HTTP_PROXY:dead,HTTPS_PROXY:dead,ALL_PROXY:dead,NO_PROXY:''};
 }
 function owner(mod,spec){
@@ -90,7 +124,10 @@ export async function runScript(ctx,mod,scriptId,{stdin='',args=[],inputFiles=[]
  }catch(e){error=String(e.message);}
  finally{fs.rmSync(box,{recursive:true,force:true});}
  let output=null;
- if(!error&&result.code!==0)error=(result.err||result.out||'script failed').slice(-1000);
+ // Some skill scripts exit 1 to say "ran, found problems" and still print their full JSON report (caption.py, detect.py, hookscore.py).
+ // Those exit codes are declared per tool as ok_exit_codes: the report is the result, not an error. Any other non-zero exit is a crash.
+ const acceptable=result.code===0||(Array.isArray(spec.ok_exit_codes)&&spec.ok_exit_codes.includes(result.code));
+ if(!error&&!acceptable)error=(result.err||result.out||'script failed').slice(-1000);
  if(!error){if(spec.output==='json'){try{output=JSON.parse(result.out);}catch{error='script did not return JSON';}}else output=result.out;}
  // Copies of SKILL.md carry one appended attribution comment; strip it to compare with the pinned vendor file.
  const vendorSkillSha=sha(skillMd.toString('utf8').replace(/\n\n<!-- EXORA source: [^>]*-->\n$/,''));
@@ -99,7 +136,7 @@ export async function runScript(ctx,mod,scriptId,{stdin='',args=[],inputFiles=[]
  try{scriptMatches=fs.readFileSync(vendorScript).equals(scriptBuf);}catch{}
  await q(`INSERT INTO tool_runs(id,client_id,run_id,module,skill,source,script,skill_sha256,script_sha256,vendor_match,input_sha256,output_sha256,exit_code,duration_ms,error,created_by)
   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
-  [receipt,ctx.client.id,ctx.run||null,mod.key,spec.skill,meta.source||null,spec.file,sha(skillMd),sha(scriptBuf),vendorShas().has(vendorSkillSha)&&scriptMatches,sha(JSON.stringify({stdin,args})),result.code===0?sha(result.out):null,result.code,Date.now()-started,error,ctx.user?.id||null]);
+  [receipt,ctx.client.id,ctx.run||null,mod.key,spec.skill,meta.source||null,spec.file,sha(skillMd),sha(scriptBuf),vendorShas().has(vendorSkillSha)&&scriptMatches,sha(JSON.stringify({stdin,args})),acceptable?sha(result.out):null,result.code,Date.now()-started,error,ctx.user?.id||null]);
  if(!error&&spec.outputs?.some(o=>o.required!==false)&&!outFiles.length)error='the tool finished but produced no output file';
- return {receipt,ok:!error,output,error,skill:spec.skill,script:spec.file,files:error?[]:outFiles};
+ return {receipt,ok:!error,output,error,skill:spec.skill,script:spec.file,files:error?[]:outFiles,exit_code:result.code,findings:!error&&result.code!==0};
 }

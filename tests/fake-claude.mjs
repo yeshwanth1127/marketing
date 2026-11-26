@@ -4,7 +4,9 @@ import {spawnSync} from 'node:child_process';import fs from 'node:fs';
 const a=process.argv.slice(2);
 if(a[0]==='auth'){console.log(JSON.stringify({loggedIn:true,authMethod:'test'}));process.exit(0);}
 if(a[0]==='--version'){console.log('fake-claude 1.0');process.exit(0);}
-const prompt=a[a.indexOf('-p')+1];const allowed=a[a.indexOf('--allowedTools')+1].split(',');
+const positional=a[a.indexOf('-p')+1];
+const prompt=a.includes('-p')&&(!positional||positional.startsWith('--'))?fs.readFileSync(0,'utf8'):positional;
+const allowed=a[a.indexOf('--allowedTools')+1]?.split(',')||[];
 const emit=o=>process.stdout.write(JSON.stringify(o)+'\n');
 const commands=[];
 if(fs.existsSync('skills/ig-reel/hookscore.py'))commands.push('python3 skills/ig-reel/hookscore.py --hook "Before you book a dentist in Indiranagar, ask these 3 questions." --json');
@@ -32,7 +34,10 @@ if(fs.existsSync('copy.json')&&JSON.parse(fs.readFileSync('copy.json','utf8')).t
  commands.push('hyperframes lint video');
  commands.push('hyperframes check video --json');
 }
-else if(fs.existsSync('copy.json')){const copy=JSON.parse(fs.readFileSync('copy.json','utf8'));fs.mkdirSync('slides',{recursive:true});for(let i=1;i<=copy.frames;i++)fs.writeFileSync(`slides/slide-${i}.html`,`<!doctype html><html><body style="margin:0;width:1080px;height:1350px;background:#0f3d3e;color:#fff;font:64px Georgia"><main style="padding:64px">${i}. test frame</main></body></html>`);fs.writeFileSync('design.json',JSON.stringify({frames:copy.frames,notes:'fake design'}));commands.push('node tools/preview.mjs');}
+else if(fs.existsSync('copy.json')){const copy=JSON.parse(fs.readFileSync('copy.json','utf8'));fs.mkdirSync('slides',{recursive:true});for(let i=1;i<=copy.frames;i++)fs.writeFileSync(`slides/slide-${i}.html`,`<!doctype html><html><body style="margin:0;width:1080px;height:1350px;background:#0f3d3e;color:#fff;font:64px Georgia"><main style="padding:64px">${i}. test frame</main></body></html>`);const campaign=/Use the engine layout "campaign"/.test(prompt);
+ // In campaign mode the designer writes slots.json (the engine's input) and reports what it saw in assets/.
+ if(campaign)fs.writeFileSync('slots.json',process.env.FAKE_CAMPAIGN_SLOTS||JSON.stringify({headline:'Skip the polo',support:'Three pieces that carry a wedding function.',labels:['Limited release','June 2026','Never basic','Shop now']}));
+ fs.writeFileSync('design.json',JSON.stringify({frames:copy.frames,notes:'fake design',...(campaign?{layout:'campaign',saw_assets:fs.existsSync('assets.json')?JSON.parse(fs.readFileSync('assets.json','utf8')).length:0,assets_in_folder:fs.existsSync('assets')?fs.readdirSync('assets').length:0}:{})}));commands.push('node tools/preview.mjs');}
 commands.push('curl https://example.com'); // must be refused: not an allowed skill script
 let n=0;
 for(const cmd of commands){

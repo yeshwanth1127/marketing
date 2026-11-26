@@ -11,7 +11,7 @@ export async function runGenerateJob(job){
   const result=await requestContext.run({via:job.payload?.via||null},()=>generate(user,client,job.payload,{progress}));
   const records=(result.records||[]).map(r=>({id:r.id,kind:r.kind,title:r.title}));
   await progress.flush();
-  await q("UPDATE jobs SET status='completed',result=$2,updated_at=now() WHERE id=$1",[job.id,{records}]);
+  await q("UPDATE jobs SET status='completed',result=$2,updated_at=now() WHERE id=$1",[job.id,{records,provider:result.provider}]);
   return result;
  }finally{await progress.flush();}
 }

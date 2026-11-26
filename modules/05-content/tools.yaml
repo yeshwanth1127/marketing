@@ -7,6 +7,7 @@ scripts:
     file: caption.py
     mode: direct
     args: ["-", "--json"]
+    ok_exit_codes: [0, 1]   # caption.py exits 1 for FIX or REVIEW and still prints its full JSON report
     input: caption text on stdin
     output: json
   - id: ai-tell
@@ -14,6 +15,7 @@ scripts:
     file: detect.py
     mode: direct
     args: ["-", "--json"]
+    ok_exit_codes: [0, 1]   # detect.py exits 1 when the verdict is not PASS and still prints its JSON report
     input: script + caption on stdin
     output: json
   - id: beat-sheet

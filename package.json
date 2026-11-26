@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev web --hostname 127.0.0.1 --port 3100",
+    "dev": "node scripts/next-server.mjs dev",
     "build": "next build web",
-    "start": "next start web --hostname 127.0.0.1 --port 3100",
+    "start": "node scripts/next-server.mjs start",
     "db:migrate": "node --env-file-if-exists=.env.local scripts/migrate.mjs",
     "db:seed": "node --env-file-if-exists=.env.local scripts/seed.mjs",
     "worker": "node --env-file-if-exists=.env.local scripts/worker.mjs",
@@ -18,6 +18,7 @@
     "vendor:sync": "bash scripts/vendor-sync.sh",
     "design:smoke": "node --env-file-if-exists=.env.local scripts/design-smoke.mjs",
     "video:smoke": "node --env-file-if-exists=.env.local scripts/design-smoke.mjs --video",
+    "quality:smoke": "node --env-file-if-exists=.env.local scripts/quality-smoke.mjs",
     "voices:install": "node scripts/install-voice-previews.mjs"
   },
   "dependencies": {
@@ -28,7 +29,7 @@
     "gsap": "^3.15.0",
     "hyperframes": "^0.8.226",
     "lucide-react": "^0.468.0",
-    "next": "^16.0.0",
+    "next": "16.4.6",
     "pg": "^8.16.3",
     "playwright": "^1.55.1",
     "react": "^19.2.0",

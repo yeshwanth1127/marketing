@@ -11,7 +11,7 @@ RUN npm run build && npm prune --omit=dev \
 
 FROM node:22-bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    ca-certificates curl ffmpeg python3 python3-pip \
+    ca-certificates curl ffmpeg python3 python3-pip python3-venv \
     libnss3 libcups2 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1 libasound2 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 \
     && rm -rf /var/lib/apt/lists/*
 RUN curl -fsSL https://claude.ai/install.sh -o /tmp/install-claude.sh \
@@ -21,10 +21,17 @@ RUN curl -fsSL https://claude.ai/install.sh -o /tmp/install-claude.sh \
     && claude --version
 WORKDIR /app
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1 EXORA_ROOT=/app
-ENV FFMPEG_BIN=/usr/bin/ffmpeg PYTHON_BIN=/usr/bin/python3
-ENV PYTHONPATH=/opt/exora-python
-RUN python3 -m pip install --no-cache-dir --target /opt/exora-python \
-    'pypdf>=6,<7' 'Pillow>=12,<13'
+ENV FFMPEG_BIN=/usr/bin/ffmpeg
+# Python for the skill scripts and brand extraction: one virtualenv built from the same requirements file and NLTK data script
+# that scripts/setup-python.sh uses. The scripts run with `python -I`, which ignores PYTHONPATH, so the packages must be in the
+# environment itself. NLTK data is downloaded here, at build time, not on first use. It lives outside /app/.local, which is a bind mount.
+COPY scripts/python-requirements.txt scripts/download-nltk-data.py /tmp/py/
+RUN python3 -m venv /opt/exora-venv \
+    && /opt/exora-venv/bin/pip install --no-cache-dir -r /tmp/py/python-requirements.txt \
+    && /opt/exora-venv/bin/python /tmp/py/download-nltk-data.py /opt/exora-nltk \
+    && NLTK_DATA=/opt/exora-nltk /opt/exora-venv/bin/python -I -c "import textstat, nltk, pypdf, PIL; nltk.data.find('tokenizers/punkt_tab'); nltk.data.find('corpora/cmudict'); nltk.data.find('corpora/stopwords'); print('python quality dependencies OK')" \
+    && rm -rf /tmp/py
+ENV EXORA_PYTHON=/opt/exora-venv/bin/python PYTHON_BIN=/opt/exora-venv/bin/python NLTK_DATA=/opt/exora-nltk
 COPY --from=build /app /app
 RUN --network=host npx playwright install chromium
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

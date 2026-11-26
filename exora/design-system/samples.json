@@ -94,6 +94,16 @@
    "venue": "Kaveri Dental, Indiranagar",
    "detail": "Free for ages 3–12 · Register on WhatsApp",
    "cta": "Reserve a slot"
+  },
+  "campaign": {
+   "headline": "Calm check-ups",
+   "support": "Thirty minutes, explained step by step, before anything starts.",
+   "labels": [
+    "New patients",
+    "Kaveri Dental",
+    "Indiranagar",
+    "Book now"
+   ]
   }
  },
  "ruh-atelier": {
@@ -181,6 +191,17 @@
    "venue": "The Courtyard, C-Scheme, Jaipur",
    "detail": "By invitation · RSVP on WhatsApp",
    "cta": "Request an invite"
+  },
+  "campaign": {
+   "headline": "Skip the polo",
+   "support": "Three pieces that carry a wedding function without trying.",
+   "labels": [
+    "Limited release",
+    "June 2026",
+    "Never basic",
+    "Shop now"
+   ],
+   "backdrop": "grey"
   }
  },
  "sunkidz": {
@@ -272,6 +293,17 @@
    "venue": "SunKidz, HSR Layout",
    "detail": "Free entry · Bring your little one",
    "cta": "Register on WhatsApp"
+  },
+  "campaign": {
+   "headline": "Play loud",
+   "support": "Soft cotton that keeps up with them all day.",
+   "labels": [
+    "New season",
+    "SunKidz",
+    "Ages 2 to 8",
+    "Shop now"
+   ],
+   "backdrop": "stone"
   }
  },
  "preview": {
@@ -361,6 +393,17 @@
    "venue": "Your venue, City",
    "detail": "Free entry · Register on WhatsApp",
    "cta": "Register"
+  },
+  "campaign": {
+   "headline": "The new era",
+   "support": "Quiet silhouettes for loud occasions.",
+   "labels": [
+    "Limited release",
+    "June 2026",
+    "Never basic",
+    "Shop now"
+   ],
+   "backdrop": "charcoal"
   }
  }
 }

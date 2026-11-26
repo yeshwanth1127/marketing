@@ -1,0 +1,10 @@
+# Python packages the content-quality scorers and brand extraction need.
+# One list for both installs, so they cannot drift:
+#   - local:  scripts/setup-python.sh  (pip install -r scripts/python-requirements.txt)
+#   - Docker: Dockerfile               (same file, into /opt/exora-venv)
+# nltk and textstat are pinned to the versions the Digital Marketing Pro scripts are tested with
+# (see core/tools/vendor-scripts/digital-marketing-pro/scripts/requirements.txt).
+nltk==3.10.3
+textstat==0.7.13
+pillow==12.3.0
+pypdf>=6,<7
