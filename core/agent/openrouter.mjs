@@ -31,6 +31,7 @@ export function openrouterKey(){
 }
 
 export function openrouterModel(kind='route'){
+ if(kind==='vision')return setting('OPENROUTER_VISION_MODEL',DEFAULT_MODEL);
  if(kind==='talk')return setting('OPENROUTER_TALK_MODEL')||setting('OPENROUTER_MODEL',DEFAULT_MODEL);
  return setting('OPENROUTER_MODEL',DEFAULT_MODEL);
 }
@@ -85,13 +86,13 @@ Questions:
 ${JSON.stringify(spec)}`;
 }
 
-export async function openrouterChat({model,prompt,timeoutMs=25000}){
+export async function openrouterChat({model,prompt,images=[],timeoutMs=25000}){
  const key=openrouterKey();
  if(!key)throw new Error('OpenRouter key is missing');
  const res=await fetch('https://openrouter.ai/api/v1/chat/completions',{
   method:'POST',
   headers:{Authorization:'Bearer '+key,'Content-Type':'application/json','HTTP-Referer':'http://127.0.0.1:3100','X-Title':'EXORA Marketing'},
-  body:JSON.stringify({model,temperature:0,messages:[{role:'user',content:prompt}]}),
+  body:JSON.stringify({model,temperature:0,messages:[{role:'user',content:images.length?[{type:'text',text:prompt},...images.map(url=>({type:'image_url',image_url:{url,detail:'high'}}))]:prompt}]}),
   signal:AbortSignal.timeout(timeoutMs),
  });
  const data=await res.json().catch(()=>({}));

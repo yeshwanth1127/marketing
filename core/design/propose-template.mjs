@@ -3,6 +3,8 @@ import {q} from '../db/index.mjs';
 import {catalog,rolesFromPalette} from './brand-profile.mjs';
 import {completePalette,extractOneFile} from '../brand/kit-from-files.mjs';
 import {openrouterChat,openrouterKey,openrouterModel,parseModelJson} from '../agent/openrouter.mjs';
+import {extractReferenceSpec,referenceAttachment,referenceImagePath} from './reference-image.mjs';
+import {EXACT_DIRECTION,referenceFidelity} from './reference-spec.mjs';
 
 const trim=(v,n)=>String(v||'').trim().slice(0,n);
 const hexOk=c=>/^#[0-9a-f]{6}$/i.test(String(c||''));
@@ -92,7 +94,8 @@ async function enrichCopy(base,ctx){
  if(!openrouterKey())return base;
  try{
   const raw=await openrouterChat({
-   model:openrouterModel('talk'),
+   model:ctx.refPath?openrouterModel('vision'):openrouterModel('talk'),
+   images:ctx.refPath?['data:image/png;base64,'+(await referenceAttachment(ctx.refPath)).data]:[],
    prompt:`You draft an EXORA design template (visual theme) for a marketer to edit.
 Return JSON only with keys: title, direction, rules, avoid.
 - title: short name (max 80 chars)
@@ -121,17 +124,33 @@ ${JSON.stringify(base)}`,
  }catch{return base;}
 }
 
-export async function proposeDesignTemplate(client,{title='',vibe='',audience='',reference_image_file_id=null,use_brand_colors=true,multicolour=undefined,brand=null}={}){
+export async function proposeDesignTemplate(client,{title='',vibe='',audience='',reference_image_file_id=null,reference_fidelity,use_brand_colors=true,multicolour=undefined,brand=null}={}){
  const lib=catalog().fonts||[];
  const brandProfile=brand?.profile||null;
  const name=trim(title,300);
  const mood=trim(vibe,500);
  const who=trim(audience,500);
- let refId=reference_image_file_id&&/^[0-9a-f-]{36}$/i.test(String(reference_image_file_id))?String(reference_image_file_id):null;
- let extracted=[];
+ const refId=reference_image_file_id&&/^[0-9a-f-]{36}$/i.test(String(reference_image_file_id))?String(reference_image_file_id):null;
+ const fidelity=referenceFidelity({reference_fidelity,reference_image_file_id:refId});
+ if(fidelity==='exact'){
+  const spec=refId?await extractReferenceSpec(await referenceImagePath(refId,client.id)):null;
+  const colors=rolesFromPalette(spec?.palette||[]);
+  return {
+   title:name||`${client.brand_name||client.name} reference theme`,
+   data:{
+    direction:EXACT_DIRECTION,rules:'',avoid:'',is_default:false,
+    reference_image_file_id:refId,reference_fidelity:fidelity,fidelity_threshold:85,design_spec:spec,
+    mode:'classic',colors:{paper:colors.paper,ink:colors.ink,accent:colors.accent,support:[]},
+    fonts:pickFonts('',brandProfile,lib),
+   },
+   meta:{note:spec?.analysis==='vision'?'Review the detected content slots and preview before saving.':spec?.slots.length?'Text slots were detected locally. Review the typography and mark any logo or subject slots.':'Mark the content slots in the design spec before generating.'},
+  };
+ }
+ let extracted=[],refPath=null;
  if(refId){
   const row=(await q('SELECT * FROM files WHERE id=$1 AND client_id=$2 AND mime IN (\'image/png\',\'image/jpeg\',\'image/webp\')',[refId,client.id])).rows[0];
   if(!row)throw Object.assign(new Error('Choose an image uploaded to this workspace'),{status:400});
+  if(openrouterKey())refPath=await referenceImagePath(refId,client.id);
   try{extracted=(await extractOneFile(client,row)).colors||[];}catch{extracted=[];}
  }
  const brandColors=[brandProfile?.colors?.paper,brandProfile?.colors?.ink,brandProfile?.colors?.accent,...(brandProfile?.colors?.support||[])].filter(hexOk);
@@ -141,7 +160,7 @@ export async function proposeDesignTemplate(client,{title='',vibe='',audience=''
  if(!multi&&Array.isArray(brandProfile?.colors?.support))roles.support=brandProfile.colors.support.filter(hexOk).slice(0,5);
  const fonts=pickFonts([mood,who,client.industry,client.name].filter(Boolean).join(' '),brandProfile,lib);
  const base=localCopy({title:name,vibe:mood,audience:who,client,hasRef:!!refId,multicolour:multi,support:roles.support});
- const copy=await enrichCopy(base,{name:client.brand_name||client.name,industry:client.industry,city:client.city,audience:who,vibe:mood,hasRef:!!refId,multicolour:multi});
+ const copy=await enrichCopy(base,{name:client.brand_name||client.name,industry:client.industry,city:client.city,audience:who,vibe:mood,hasRef:!!refId,multicolour:multi,refPath});
  return {
   title:copy.title,
   data:{
@@ -150,6 +169,7 @@ export async function proposeDesignTemplate(client,{title='',vibe='',audience=''
    avoid:copy.avoid,
    is_default:false,
    reference_image_file_id:refId,
+   reference_fidelity:'inspired',
    mode:roles.mode||(multi?'multicolour':'classic'),
    colors:{paper:roles.paper,ink:roles.ink,accent:roles.accent,support:roles.support||[]},
    fonts,

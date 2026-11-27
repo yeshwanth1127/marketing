@@ -32,8 +32,12 @@ RUN python3 -m venv /opt/exora-venv \
     && NLTK_DATA=/opt/exora-nltk /opt/exora-venv/bin/python -I -c "import textstat, nltk, pypdf, PIL; nltk.data.find('tokenizers/punkt_tab'); nltk.data.find('corpora/cmudict'); nltk.data.find('corpora/stopwords'); print('python quality dependencies OK')" \
     && rm -rf /tmp/py
 ENV EXORA_PYTHON=/opt/exora-venv/bin/python PYTHON_BIN=/opt/exora-venv/bin/python NLTK_DATA=/opt/exora-nltk
+RUN apt-get update && apt-get install -y --no-install-recommends tesseract-ocr \
+    && rm -rf /var/lib/apt/lists/*
+ENV PLAYWRIGHT_BROWSERS_PATH=/opt/exora-browsers
+COPY --from=build /app/node_modules/playwright-core /opt/exora-playwright
+RUN --network=host node /opt/exora-playwright/cli.js install chromium
 COPY --from=build /app /app
-RUN --network=host npx playwright install chromium
 COPY scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
 EXPOSE 3100

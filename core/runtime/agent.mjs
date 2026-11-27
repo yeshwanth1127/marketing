@@ -6,7 +6,7 @@ import fs from 'node:fs';import os from 'node:os';import path from 'node:path';i
 import {ROOT,q,id} from '../db/index.mjs';
 import {prepareDmp} from '../tools/dmp.mjs';
 import {python} from '../tools/runner.mjs';
-import {claudeBinary} from './claude-cli.mjs';
+import {claudeBinary,claudeInput} from './claude-cli.mjs';
 import {buildPromptSpecification,renderPromptSpecification,promptMetadata} from './prompts/prompt-builder.mjs';
 
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -131,7 +131,7 @@ const EFFORTS=['low','medium','high','xhigh','max'];
 const cleanModel=v=>/^[\w.:-]{2,60}$/.test(String(v||''))?String(v):'';
 const cleanEffort=v=>EFFORTS.includes(String(v||'').toLowerCase())?String(v).toLowerCase():'';
 
-export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=40,files,allowed:extraAllowed,prompt:customPrompt,promptSpecification,collect,requireOutput=true,owners,commandOwners=[],extra,onEvent,model,effort,knownFiles=false}={}){
+export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=40,files,allowed:extraAllowed,prompt:customPrompt,promptSpecification,collect,requireOutput=true,owners,commandOwners=[],extra,onEvent,model,effort,knownFiles=false,images=[],capturePrompt=false}={}){
  const {box,allowed,scriptOwner,env,dmp}=buildBox(mod,skills,ctx,{files,allowed:extraAllowed,owners});
  const started=Date.now();
  try{
@@ -151,6 +151,7 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
    '--disallowedTools','WebFetch,WebSearch,Task',
    // isolate from the operator's own MCP servers and their credentials
    '--strict-mcp-config','--mcp-config','{"mcpServers":{}}'];
+  if(images.length)args.push('--input-format','stream-json');
   if(useModel)args.push('--model',useModel);
   if(useEffort)args.push('--effort',useEffort);
   const {code,stdout,stderr}=await new Promise(resolve=>{
@@ -163,7 +164,7 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
    child.on('error',e=>finish({code:-1,stdout,stderr:String(e.message)}));
    child.on('close',code=>finish({code,stdout,stderr}));
    child.stdin.on('error',()=>{});
-   child.stdin.end(prompt);
+   child.stdin.end(images.length?claudeInput(prompt,images):prompt);
   });
   // Instrumentation: tokens, cost, turns and wall time of this Claude run, from the CLI's result event.
   const usage=usageFromStream(stdout);
@@ -192,6 +193,6 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
   let outputs=null;
   if(fs.existsSync(outFile))outputs=JSON.parse(fs.readFileSync(outFile,'utf8'));
   else if(requireOutput)throw new Error('Claude finished without writing output.json');
-  return {outputs,collected,receipts,duration_ms:Date.now()-started,said:finalText(stdout)};
+  return {outputs,collected,receipts,duration_ms:Date.now()-started,said:finalText(stdout),...(capturePrompt?{prompt}:{})};
  }finally{fs.rmSync(box,{recursive:true,force:true});}
 }
