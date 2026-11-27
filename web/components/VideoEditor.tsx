@@ -2,9 +2,10 @@
 // Edit tab for a generated video. The design JSON is the source of truth: every control produces JSON Patch ops,
 // the preview renders those ops instantly in the browser (same HTML as the server render), and only "Save" / "Render"
 // talk to the server. Visual edits never call a model; "Describe a change" makes one small-model call that returns ops.
+import ProductImageInput from './ProductImageInput';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {AlertCircle,Loader2,Undo2,Redo2,RotateCcw,Play,Pause,Sparkles,Lock,Unlock,Save,Wand2} from 'lucide-react';
-import {applyPatch,validateDesign,beatStarts,totalSeconds,MOTIONS,CORNERS} from '../../core/video/design.mjs';
+import {applyPatch,validateDesign,beatStarts,totalSeconds,applyRail,MOTIONS,CORNERS} from '../../core/video/design.mjs';
 import {designToHtml} from '../../core/video/render-html.mjs';
 
 async function call(path:string,body?:any){const r=await fetch('/api/'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;}
@@ -15,6 +16,7 @@ export default function VideoEditor({record,canEdit,onRendered}:{record:any,canE
  const [srv,setSrv]=useState<any>(null),[err,setErr]=useState(''),[busy,setBusy]=useState(''),[pending,setPending]=useState<any[]>([]);
  const [tab,setTab]=useState<typeof TABS[number]>('Background'),[beat,setBeat]=useState(0),[word,setWord]=useState<number|null>(null);
  const [ideas,setIdeas]=useState<any[]>([]),[ask,setAsk]=useState(''),[note,setNote]=useState(''),[paused,setPaused]=useState(false);
+ const [concepts,setConcepts]=useState<any>(null);
  const frame=useRef<HTMLIFrameElement>(null);const q=`client=${record.client_id}&asset=${record.id}`;
  async function load(){try{const d=await call('video-design?'+q);setSrv(d);setErr('');if(d.design)call('video-design/variants?'+q).then(v=>setIdeas(v.variants)).catch(()=>{});}catch(e:any){setErr(e.message);}}
  useEffect(()=>{load();},[record.id]);
@@ -56,6 +58,7 @@ export default function VideoEditor({record,canEdit,onRendered}:{record:any,canE
  const Num=({label,path,min,max,step=1}:any)=><label className="field"><span>{label}</span><input type="number" min={min} max={max} step={step} value={get(draft,path)??''} onChange={e=>e.target.value!==''&&set(path,Number(e.target.value))} disabled={!editable}/></label>;
  const Sel=({label,path,options}:any)=><label className="field"><span>{label}</span><select value={get(draft,path)??''} onChange={e=>set(path,e.target.value)} disabled={!editable}>{options.map((o:any)=><option key={o[0]??o} value={o[0]??o}>{o[1]??o}</option>)}</select></label>;
  const fontChoices=fonts.filter((f:any)=>!locked||draft.brand.fonts.includes(f.id));
+ const availablePlan=concepts||(draft.layout.rail?.concepts?draft.layout.rail:null);
  const bg=draft.theme.background;const media=srv.media||[];
  const stages=job?.progress?.stages||[];
 
@@ -68,6 +71,16 @@ export default function VideoEditor({record,canEdit,onRendered}:{record:any,canE
     <div className="vd-beats">{draft.beats.map((x:any,i:number)=><button type="button" key={x.id} className={'vd-beat'+(i===bi?' on':'')} onClick={()=>seekBeat(i)} style={{flexGrow:x.duration}} title={x.text.map((w:any)=>w.text).join(' ')}>{x.label||i+1}</button>)}</div>
    </div>
    <div className="vd-panels">
+    <details open={!!draft.layout.rail||undefined}><summary>Cover and main visual</summary>
+     <button className="button" disabled={!!busy||!editable} onClick={async()=>{setBusy('concepts');try{setConcepts(await call('video-design/concepts',{client_id:record.client_id,asset_id:record.id}));}catch(e:any){setErr(e.message)}finally{setBusy('')}}}>{busy==='concepts'?'Planning…':'Generate 3 concepts'}</button>
+     {availablePlan?.concepts.map((c:any,i:number)=><button className="button" key={i} disabled={!editable} title={c.scenes.join(' → ')} onClick={()=>{const next=applyRail(draft,availablePlan,i,{seconds:totalSeconds(draft),brand:draft.layout.rail?.brand||'',file_id:draft.layout.rail?.file_id});addOps(['layout','theme','beats'].map(k=>({op:'replace',path:'/'+k,value:next[k]})));setBeat(0);setConcepts(null)}}>{c.name}</button>)}
+     {draft.layout.rail&&<><label className="field">Cover caption<input disabled={!editable} value={draft.layout.rail.caption} maxLength={120} onChange={e=>set('/layout/rail/caption',e.target.value||' ')}/></label>{draft.layout.rail.captions?.map((s:string)=><button disabled={!editable} type="button" className="button" key={s} onClick={()=>set('/layout/rail/caption',s)}>{s}</button>)}
+     <label className="field">Product image across all scenes<select disabled={!editable} value={draft.layout.rail.file_id||''} onChange={e=>set('/layout/rail/file_id',e.target.value||null)}><option value="">Generated artwork</option>{media.filter((x:any)=>/^image\/(png|jpeg|webp)$/.test(x.mime)).map((x:any)=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+     <ProductImageInput disabled={!editable||!!busy} onUpload={async file=>{const form=new FormData();form.set('client_id',record.client_id);form.set('file',file);const r=await fetch('/api/upload',{method:'POST',body:form});const x=await r.json();if(!r.ok)throw Error(x.error);setSrv((v:any)=>({...v,media:[x,...v.media]}));set('/layout/rail/file_id',x.id)}}/>
+     {draft.layout.rail.style&&<details><summary>Product layout and motion</summary>{([['laneWidth','Product column %',35,62,1],['visualScale','Product scale',0.5,1.4,.05],['rotation','Rotation',-30,30,1],['periodSeconds','Seconds per pass',2,8,.25]] as const).map(([k,label,min,max,step])=><label className="field" key={k}>{label}<input disabled={!editable} type="range" min={min} max={max} step={step} value={draft.layout.rail.style[k]} onChange={e=>set('/layout/rail/style/'+k,Number(e.target.value))}/></label>)}<a download="style.json" href={'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(draft.layout.rail.style,null,2))}>Export style JSON</a></details>}
+     <a className="button" download="reel-project.json" href={'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(draft,null,2))}>Export project JSON</a>
+     {record.data.files?.filter((f:any)=>f.name==='cover.png').map((f:any)=><a className="button" key={f.id} href={'/api/files/'+f.id+'?download'}>Download rendered cover</a>)}</>}
+    </details>
     <div className="vd-tabs">{TABS.map(t=><button type="button" key={t} className={t===tab?'on':''} onClick={()=>setTab(t)}>{t}</button>)}
      <button type="button" className="vd-lock" title={locked?'Colours and fonts are limited to the brand kit':'Off-brand colours and fonts are allowed'} disabled={!editable} onClick={()=>set('/brand/locked',!locked)}>{locked?<Lock size={13}/>:<Unlock size={13}/>}{locked?'On-brand':'Off-brand unlocked'}</button></div>
     {tab==='Background'&&<div className="vd-panel">

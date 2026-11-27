@@ -27,7 +27,7 @@ export async function videoDesignHttp(req,url,route,user){
   if(route==='video-design/variants'){if(!loaded.design)fail(loaded.read_only,409);return json({variants:designVariants(loaded.design,{n:Math.min(8,Number(url.searchParams.get('n'))||6)})});}
   if(route!=='video-design')fail('Not found',404);
   const fonts=catalog().map(f=>({id:f.id,family:f.family,role:f.role,faces:f.faces.map(x=>({file:x.file,style:x.style,weight:x.weight}))}));
-  const media=(await q("SELECT id,name,mime FROM files WHERE client_id=$1 AND (mime LIKE 'image/%' OR mime='video/mp4') AND storage_path LIKE 'uploads/%' ORDER BY created_at DESC LIMIT 60",[client.id])).rows;
+  const media=(await q("SELECT id,name,mime FROM files WHERE client_id=$1 AND (mime LIKE 'image/%' OR mime='video/mp4') AND replace(storage_path,chr(92),'/') LIKE 'uploads/%' ORDER BY created_at DESC LIMIT 60",[client.id])).rows;
   const job=(await q("SELECT id,type,status,error,progress,created_at,updated_at FROM jobs WHERE client_id=$1 AND payload->>'asset_id'=$2 AND type IN ('video-design','render','voiceover') ORDER BY created_at DESC LIMIT 1",[client.id,asset.id])).rows[0]||null;
   return json({...loaded,fonts,media,job,estimate_seconds:loaded.design?estimateSeconds(loaded.design):null,brand:await brandForDesign(client)});
  }
@@ -41,6 +41,12 @@ export async function videoDesignHttp(req,url,route,user){
   return json({job_id:job.id,status:'queued'});
  }
  const asset=await assetFor(client,b.asset_id);
+ if(route==='video-design/concepts'){
+  const loaded=await loadDesign(asset,client,user);
+  if(!loaded.editable||!loaded.design)fail('Choose an editable video draft.',409);
+  const {railConcepts}=await import('./rail-concepts.mjs');
+  return json(await railConcepts(client,asset,loaded.design.brand));
+ }
  if(route==='video-design/patch'){const r=await patchDesign({asset,user,base:b.base,ops:b.ops,note:b.note});return json(r);}
  if(['video-design/undo','video-design/redo','video-design/revert'].includes(route)){const r=await moveHead({asset,user,action:route.split('/')[1]});return json(r);}
  if(route==='video-design/interpret'){

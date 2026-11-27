@@ -53,7 +53,7 @@ export function fontsFor(design){
  const ids=[...new Set([design.theme.fonts.display.id,design.theme.fonts.body.id])];
  return cat.filter(f=>ids.includes(f.id)).map(f=>({id:f.id,family:f.family,faces:f.faces.map(x=>({file:x.file,style:x.style,weight:x.weight}))}));
 }
-export function fileIdsIn(design){const ids=new Set();const bg=b=>{if(b&&['image','video'].includes(b.kind)&&b.file_id)ids.add(b.file_id);};bg(design.theme.background);for(const b of design.beats)bg(b.style?.background);if(design.layout?.logo?.file_id&&design.layout.logo.position!=='none')ids.add(design.layout.logo.file_id);return [...ids];}
+export function fileIdsIn(design){const ids=new Set();if(design.layout?.rail?.file_id)ids.add(design.layout.rail.file_id);const bg=b=>{if(b&&['image','video'].includes(b.kind)&&b.file_id)ids.add(b.file_id);};bg(design.theme.background);for(const b of design.beats)bg(b.style?.background);if(design.layout?.logo?.file_id&&design.layout.logo.position!=='none')ids.add(design.layout.logo.file_id);return [...ids];}
 /** Uploaded files the design references, scoped to the client (and its parents). */
 export async function resolveFiles(design,clientIds){
  const ids=fileIdsIn(design);if(!ids.length)return {};
@@ -68,7 +68,7 @@ export async function resolveFiles(design,clientIds){
 /** Cache key for one beat's picture: everything that can change its pixels, and nothing else. */
 export function beatKey(design,i,files={}){
  const b=design.beats[i];const used=fileIdsIn({...design,beats:[b]}).map(id=>[id,files[id]?.size||0]);
- return sha({r:RENDERER_VERSION,hf:hfVersion,q:process.env.EXORA_VIDEO_QUALITY||'looks',f:[design.format,design.width,design.height,design.fps],theme:design.theme,layout:design.layout,beat:b,last:i===design.beats.length-1,used});
+ return sha({r:RENDERER_VERSION,hf:hfVersion,q:process.env.EXORA_VIDEO_QUALITY||'looks',f:[design.format,design.width,design.height,design.fps],theme:design.theme,layout:design.layout,beat:b,last:i===design.beats.length-1,railOffset:design.layout?.rail?design.beats.slice(0,i).reduce((n,b)=>n+b.duration,0):undefined,used});
 }
 async function renderBeat(design,i,{files,fonts,perBeat,env}){
  const key=beatKey(design,i,files);const out=path.join(CACHE,'beats',key+'.mp4');

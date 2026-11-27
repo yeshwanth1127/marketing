@@ -38,6 +38,7 @@ export interface VideoDesign {
     safe_area: number;       // share of width kept clear on every side
   };
   layout: {
+    rail?: {concepts?:{name:string;captions:string[];scenes:string[]}[];runId?:string;skills?:{name:string;sha256:string}[];caption:string; file_id:string|null; art:{d:string;fill:Hex}[]; brand:string; captions:string[]; style?:{laneWidth:number;periodSeconds:number;visualScale:number;rotation:number}};
     text_position?: 'top' | 'center' | 'bottom';
     logo?: { position: Corner; file_id: string | null; size?: number };
     locale_tag?: { text: string; position: Corner; visible: boolean };

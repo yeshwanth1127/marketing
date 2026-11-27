@@ -4,7 +4,7 @@ import fs from 'node:fs';import path from 'node:path';
 import {q,tx,id,ROOT,audit} from '../db/index.mjs';
 import {resolveClient} from '../clients/tree.mjs';
 import {createProgress} from '../runtime/progress.mjs';
-import {stableStringify,validateDesign} from './design.mjs';
+import {stableStringify,validateDesign,applyRail} from './design.mjs';
 import {loadDesign,designVersion,clientIdsOf,videoFileOf} from './store.mjs';
 import {renderDesign,routeVideo,CACHE} from './pipeline.mjs';
 
@@ -38,6 +38,13 @@ export async function runVideoDesignJob(job){
   let version=Number(job.payload.version)||loaded.head;
   let design=version===loaded.head?loaded.design:(await designVersion(asset.id,version))?.design;
   if(!design)throw new Error(`Design version ${version} does not exist`);
+  if(job.type==='render'&&job.payload.reel_style==='product-rail'&&!design.layout.rail){
+   const {railConcepts}=await import('./rail-concepts.mjs');
+   const plan=await railConcepts(client,asset,design.brand);
+   design=applyRail(design,plan,0,{seconds:job.payload.reel_seconds,caption:job.payload.cover_caption,file_id:job.payload.product_file_id,brand:job.payload.client_name});
+   const problems=validateDesign(design);if(problems.length)throw Error(problems.join(' · '));
+   version=await systemVersion(asset.id,version,design,'Moving product editorial',user.id);
+  }
   if(job.type==='render'&&job.payload.composer==='codex'&&!design.meta?.codex_design_run_id){
    const {chooseCodexDesign}=await import('../design/codex-visual.mjs');
    const plan=await chooseCodexDesign({client,user,asset,payload:job.payload,design});
@@ -63,10 +70,21 @@ export async function runVideoDesignJob(job){
   if(job.type==='voiceover'){const timed={...r.design,audio:{...r.design.audio,voice:{text:voice.text,voice_id:voice.voiceId},timing:'proportional'}};
    if(stableStringify(timed)!==stableStringify(design))version=await systemVersion(asset.id,version,timed,'Timed to the narration',user.id);}
   const name=job.type==='voiceover'?(asset.title+'.mp4').slice(0,200):'reel.mp4';
+  let cover=null;
+  if(design.layout.rail){
+   const {execFile}=await import('node:child_process'),{promisify}=await import('node:util');
+   const coverPath=path.join(outDir,'cover.png');
+   await promisify(execFile)(process.env.FFMPEG_BIN||'ffmpeg',['-v','error','-y','-i',r.path,'-frames:v','1',coverPath],{timeout:60000});
+   cover={id:id(),path:coverPath,name:'cover.png',mime:'image/png'};
+  }
   const fid=id();const size=fs.statSync(r.path).size;
   await tx(async c=>{
    await c.query('INSERT INTO files(id,client_id,name,mime,size,storage_path,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)',[fid,job.client_id,name,'video/mp4',size,path.relative(path.join(ROOT,'.local'),r.path),job.created_by]);
    const files=[{id:fid,name,mime:'video/mp4'}];
+   if(cover){
+    await c.query('INSERT INTO files(id,client_id,name,mime,size,storage_path,created_by) VALUES($1,$2,$3,$4,$5,$6,$7)',[cover.id,job.client_id,cover.name,cover.mime,fs.statSync(cover.path).size,path.relative(path.join(ROOT,'.local'),cover.path),user.id]);
+    files.push({id:cover.id,name:cover.name,mime:cover.mime});
+   }
    const fresh=(await c.query('SELECT data FROM records WHERE id=$1 FOR UPDATE',[asset.id])).rows[0].data;
    await c.query('UPDATE records SET data=$2,updated_at=now() WHERE id=$1',[asset.id,{...fresh,files,render_status:'completed',render_error:null,render_failed_step:null,
     render_engine:'EXORA video design (HTML + HyperFrames, local)'+(r.audio?' + narration':''),dimensions:[design.width,design.height],target_seconds:Math.round(r.seconds),

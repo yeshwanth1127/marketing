@@ -54,6 +54,10 @@ export async function patchDesign({asset,user,base,ops,note}){
   let next;try{next=applyPatch(cur,ops);}catch(e){throw httpError(e.message);}
   const fontIds=JSON.parse(fs.readFileSync(path.join(ROOT,'exora/fonts/catalog.json'),'utf8')).fonts.map(f=>f.id);
   const problems=validateDesign(next,{fontIds});if(problems.length)throw httpError(problems.slice(0,4).join(' · '),422);
+  if(next.layout?.rail?.file_id&&next.layout.rail.file_id!==cur.layout?.rail?.file_id){
+   const image=await c.query("SELECT 1 FROM files WHERE id=$1 AND client_id=$2 AND mime IN ('image/png','image/jpeg','image/webp')",[next.layout.rail.file_id,asset.client_id]);
+   if(!image.rowCount)throw httpError('Choose an image uploaded to this workspace.',422);
+  }
   const version=(await c.query('SELECT coalesce(max(version),0)+1 v FROM video_design_versions WHERE asset_id=$1',[asset.id])).rows[0].v;
   await c.query('INSERT INTO video_design_versions(id,asset_id,version,parent,design,patch,note,created_by) VALUES($1,$2,$3,$4,$5,$6,$7,$8)',[id(),asset.id,version,row.head,next,JSON.stringify(ops),String(note||'').slice(0,200)||null,user?.id||null]);
   await c.query('UPDATE video_designs SET head=$2,updated_at=now() WHERE asset_id=$1',[asset.id,version]);

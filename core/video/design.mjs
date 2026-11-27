@@ -1,6 +1,8 @@
 // VideoDesign: the single source of truth for a generated video. The MP4 is derived from it.
 // Pure and browser-safe (no node imports): the editor uses the same code for live preview as the worker uses to render.
 
+import railStyle from './style.json' with {type:'json'};
+
 export const SCHEMA_ID='exora.video-design/1';
 export const MOTIONS=['fade','typewriter','words','slide','scale','none'];
 export const CORNERS=['top-left','top-right','bottom-left','bottom-right','top-center','bottom-center','none'];
@@ -30,6 +32,7 @@ export const VIDEO_DESIGN_JSON_SCHEMA={
    motion:{type:'object',additionalProperties:false,properties:{preset:{enum:MOTIONS},speed:{type:'number',minimum:0.25,maximum:3}}},
    safe_area:{type:'number',minimum:0.03,maximum:0.2}}},
   layout:{type:'object',additionalProperties:false,properties:{
+   rail:{type:'object',required:['caption','art'],properties:{caption:{type:'string',maxLength:120},file_id:{type:['string','null']},art:{type:'array'},brand:{type:'string'},captions:{type:'array'},style:{type:'object'}}},
    text_position:{enum:TEXT_POSITIONS},
    logo:{type:'object',additionalProperties:false,properties:{position:{$ref:'#/$defs/corner'},file_id:{type:['string','null']},size:{type:'number',minimum:24,maximum:240}}},
    locale_tag:{type:'object',additionalProperties:false,properties:{text:{type:'string',maxLength:40},position:{$ref:'#/$defs/corner'},visible:{type:'boolean'}}},
@@ -82,6 +85,14 @@ export function validateDesign(d,{fontIds=null}={}){
  rng(ty.size,32,220,'Text size');rng(ty.sub_size,20,120,'Support text size');rng(ty.letter_spacing,-0.1,0.3,'Letter spacing');rng(ty.line_height,0.8,2,'Line height');rng(t.safe_area,0.03,0.2,'Safe area');rng(t.motion?.speed,0.25,3,'Animation speed');
  if(ty.align&&!ALIGNS.includes(ty.align))e.push('Unknown alignment');if(t.motion?.preset&&!MOTIONS.includes(t.motion.preset))e.push('Unknown animation');
  const L=d.layout||{};
+ if(L.rail){const r=L.rail;
+  if(typeof r.caption!=='string'||!r.caption.trim()||r.caption.length>120||r.caption.trim().split(/\s+/).length>6)e.push('Choose a cover caption of one to six words.');
+  for(const [key,min,max] of [['laneWidth',35,62],['periodSeconds',2,8],['visualScale',0.5,1.4],['rotation',-30,30]])rng(r.style?.[key],min,max,'Product '+key);
+  if(r.captions!==undefined&&(!Array.isArray(r.captions)||r.captions.length>3||r.captions.some(s=>typeof s!=='string'||s.length>120)))e.push('Invalid cover alternatives.');
+  if(typeof r.brand!=='string'||r.brand.length>300)e.push('Invalid cover brand.');
+  if(r.file_id&&!/^[0-9a-f-]{36}$/i.test(r.file_id))e.push('Choose an image from the asset library.');
+  if(!Array.isArray(r.art)||!r.art.length||r.art.length>32||!r.art.every(p=>p&&typeof p.d==='string'&&p.d.length<4000&&/^[MmLlHhVvCcSsQqTtAaZz0-9.,+ eE\s-]+$/.test(p.d)&&HEX.test(p.fill)))e.push('Invalid product artwork.');
+ }
  for(const [k,v] of [['logo',L.logo?.position],['locale tag',L.locale_tag?.position]])if(v!==undefined&&!CORNERS.includes(v))e.push(`Unknown ${k} position`);
  if(L.locale_tag?.text!==undefined&&String(L.locale_tag.text).length>40)e.push('Locale tag is too long');
  if(L.text_position&&!TEXT_POSITIONS.includes(L.text_position))e.push('Unknown text position');
@@ -235,4 +246,13 @@ export function fitSize(text,{size,width,height,safe,line_height,display_ratio=0
  const usable=width*(1-2*safe);const chars=Math.max(1,String(text).length);let s=size;
  for(;s>36;s-=2){const perLine=Math.max(4,Math.floor(usable/(s*display_ratio)));const lines=Math.ceil(chars/perLine);if(lines*s*line_height<=height*max_height_ratio)break;}
  return s;
+}
+
+export function applyRail(design,plan,index,options={}){
+ const c=plan.concepts[index],caption=options.caption||c.captions[0],duration=Math.max(10,Math.min(20,Number(options.seconds)||15));
+ return {...design,format:'reel',width:1080,height:1920,fps:30,
+  theme:{...design.theme,type:{...design.theme.type,case:'upper',size:96},motion:{preset:'slide',speed:1}},
+  layout:{...design.layout,locale_tag:{...design.layout.locale_tag,visible:false},rail:{concepts:plan.concepts,runId:plan.runId,skills:plan.skills,style:{...railStyle,...design.layout.rail?.style},caption,file_id:options.file_id||null,art:plan.art,brand:options.brand||'',captions:c.captions}},
+  beats:[caption,...c.scenes].map((s,i)=>({id:'rail'+i,label:['COVER','DETAIL','ACTION','CTA'][i],duration:[2,(duration-5)/2,(duration-5)/2,3][i],text:textToSpans(s),caption:s})),
+  meta:{...design.meta,concept:c.name,skills:plan.skills,concept_run_id:plan.runId}};
 }
