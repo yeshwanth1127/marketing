@@ -67,13 +67,13 @@ test('apply-brand-kit preview and save keep graded colours from the file',async(
  const up=await handle(new Request('http://localhost:3100/api/upload',{method:'POST',headers:{cookie,origin:'http://localhost:3100'},body:form}));
  assert.equal(up.status,200,await up.clone().text());
  const file=await up.json();
- const preview=await act({action:'apply-brand-kit',file_ids:[file.id],preview:true});
+ const preview=await act({action:'apply-brand-kit',client_id:client,file_ids:[file.id],preview:true});
  assert.equal(preview.status,200,JSON.stringify(preview.data));
  const colors=preview.data.colors||preview.data.data?.colors||[];
  assert.ok(colors.some(isOrange),JSON.stringify(colors));
  assert.ok(!colors.includes('#254b3b'));
  const graded=['#f7f4ef','#111111','#cc5500'];
- const saved=await act({action:'apply-brand-kit',file_ids:[file.id],colors:graded});
+ const saved=await act({action:'apply-brand-kit',client_id:client,file_ids:[file.id],colors:graded});
  assert.equal(saved.status,200,JSON.stringify(saved.data));
  assert.ok(saved.data.data.colors.includes('#cc5500'));
  assert.ok(!saved.data.data.colors.includes('#254b3b'));

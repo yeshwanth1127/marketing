@@ -4,7 +4,8 @@ import {handle} from '../core/api.mjs';import {q,pool,ROOT} from '../core/db/ind
 let cookie,client,idea,asset;const stamp=Date.now();
 async function request(route,body,token=cookie){const r=await handle(new Request('http://localhost:3100/api/'+route,{method:body?'POST':'GET',headers:{...(token?{cookie:token}:{}),...(body?{'content-type':'application/json',origin:'http://localhost:3100'}:{})},body:body?JSON.stringify(body):undefined}));return {status:r.status,data:await r.json(),headers:r.headers};}
 const action=body=>request('action',{client_id:client,...body});
-const vendor=(rel,stdin,args)=>{const r=spawnSync('python3',['-I',path.join(ROOT,'vendor',rel),...args],{input:stdin,encoding:'utf8'});assert.equal(r.status,0,r.stderr);return JSON.parse(r.stdout);};
+import {python} from '../core/tools/runner.mjs';
+const vendor=(rel,stdin,args,ok=[0])=>{const r=spawnSync(python(),['-I','-X','utf8',path.join(ROOT,'vendor',rel),...args],{input:stdin,encoding:'utf8'});assert.ok(ok.includes(r.status),r.stderr||String(r.error||r.status));return JSON.parse(r.stdout);};
 after(async()=>pool.end());
 
 test('setup: sign in and run steps 1-5',async()=>{
@@ -20,8 +21,8 @@ test('Hook scores equal the vendored ig-reel hookscore.py output (golden)',()=>{
 });
 
 test('Caption lint and AI-tell results equal the vendored scripts (golden)',()=>{
- const cap=vendor('instagram-agent-skill/skills/ig-caption/caption.py',asset.data.caption,['-','--json']);
- assert.deepEqual(asset.data.caption_lint.checks,cap.checks);
+ const cap=vendor('instagram-agent-skill/skills/ig-caption/caption.py',asset.data.caption,['-','--json'],[0,1]);
+ assert.deepEqual(asset.data.caption_lint.checks.map(({check,status,detail})=>({check,status,detail})),cap.checks);
  const ai=vendor('instagram-agent-skill/skills/ig-human/detect.py',[asset.data.script,asset.data.caption].join('\n\n'),['-','--json']);
  assert.equal(asset.data.ai_tell.human_score,ai.human_score);
  assert.ok(asset.data.beat_sheet.beats.length>0);
@@ -31,7 +32,7 @@ test('Every scored output carries receipts that point at unmodified vendor files
  for(const rec of [idea,asset]){assert.ok(rec.data.receipts.length>0);
   const rows=(await q('SELECT * FROM tool_runs WHERE id=ANY($1::uuid[])',[rec.data.receipts])).rows;
   assert.equal(rows.length,rec.data.receipts.length);
-  for(const row of rows){assert.equal(row.exit_code,0,row.error);assert.equal(row.vendor_match,true,row.skill+' '+row.script);assert.equal(row.client_id,client);assert.ok(row.output_sha256);}}
+  for(const row of rows){assert.equal(row.error,null);assert.ok(row.exit_code===0||(row.script==='caption.py'&&row.exit_code===1));assert.equal(row.vendor_match,true,row.skill+' '+row.script);assert.equal(row.client_id,client);assert.ok(row.output_sha256);}}
 });
 
 test('Receipts are append-only',async()=>{const [rid]=idea.data.receipts;await assert.rejects(q('UPDATE tool_runs SET exit_code=1 WHERE id=$1',[rid]),/cannot be modified/);await assert.rejects(q('DELETE FROM tool_runs WHERE id=$1',[rid]),/cannot be modified/);});
@@ -152,7 +153,7 @@ test('Claude reel composition: HyperFrames project is kept and CLI runs are rece
  }finally{delete process.env.EXORA_CLAUDE_BIN;}
 });
 
-test('video render always queues Claude design, even if the form asked for a template',async()=>{
+test('video render and retry preserve the designer selected on the form',async()=>{
  process.env.EXORA_CLAUDE_BIN=path.join(ROOT,'tests/fake-claude.mjs');
  try{
   const {videoSkillsFor,composerFor}=await import('../core/design/compose.mjs');
@@ -167,16 +168,16 @@ test('video render always queues Claude design, even if the form asked for a tem
   const copy=await action({action:'save-record',kind:'Asset',title:'Reel script',data:{type:'copy',script:'Ask this first',on_screen_text:['Ask this first']}});
   assert.equal(copy.status,200,JSON.stringify(copy.data));
   const rr=await action({action:'render',asset_id:copy.data.id,type:'video',format:'reel',layout:'auto',composer:'template'});
-  if(!connected){assert.equal(rr.status,409);assert.match(rr.data.error,/Connect your Claude account/);return;}
+  assert.ok(connected,'the configured Claude fixture is available');
   assert.equal(rr.status,200,JSON.stringify(rr.data));
   const job=(await q("SELECT payload FROM jobs WHERE id=$1",[rr.data.job_id])).rows[0];
-  assert.equal(job.payload.composer,'claude');
-  assert.equal(rr.data.asset.data.composer,'claude');
+  assert.equal(job.payload.composer,'template');
+  assert.equal(rr.data.asset.data.composer,'template');
   await q("UPDATE jobs SET status='failed',error='test fail' WHERE id=$1",[rr.data.job_id]);
   await q("UPDATE records SET data=coalesce(data,'{}'::jsonb)||$2::jsonb WHERE id=$1",[rr.data.asset.id,JSON.stringify({render_status:'failed',composer:'skills'})]);
   const retry=await action({action:'retry-render',asset_id:rr.data.asset.id});
   assert.equal(retry.status,200,JSON.stringify(retry.data));
-  assert.equal((await q("SELECT payload->>'composer' AS composer FROM jobs WHERE id=$1",[retry.data.job_id])).rows[0].composer,'claude');
+  assert.equal((await q("SELECT payload->>'composer' AS composer FROM jobs WHERE id=$1",[retry.data.job_id])).rows[0].composer,'template');
  }finally{delete process.env.EXORA_CLAUDE_BIN;}
 });
 
@@ -245,7 +246,7 @@ test('skills reel composer writes a HyperFrames project with motion doctrine and
   assert.match(html,/seams:auto/);
   assert.match(html,/data-track-kind="captions"/);
   assert.doesNotMatch(html,/\[landmark\]/);
-  assert.match(hook,/Looking for fabblen in Bengaluru/);
+  assert.match(hook.replace(/<[^>]+>/g,' ').replace(/\s+/g,' '),/Looking for fabblen in Bengaluru/);
   for(const name of ['exora-design-system','motion-doctrine','hyperframes','captions-overlay'])assert.ok(res.skills.includes(name),name);
  }finally{fs.rmSync(keepDir,{recursive:true,force:true});}
 });

@@ -232,6 +232,23 @@ if(action==='save-record'){const kind=b.kind;if(!['BrandKit','Strategy','Campaig
  }else delete data.design_spec;
 }if(kind==='Metric'&&!b.id&&(await existingMetricKeys(client)).has(metricKey(data)))fail('This number is already recorded for this company (same source, metric, date and campaign)');if(kind==='Campaign'&&data.company_wide){if(client.node_type==='product')fail('Company-wide campaigns are made at company or brand level');if(Number(data.budget||0)>0||(data.channels||[]).some(ch=>Number(ch.amount||0)>0))fail('A company-wide campaign holds no money. Put the budget on each product\'s own plan.');}if(kind==='Asset'){const brand=(await brandFor(client)).data;data.checks=checks(data,brand);data.provider=data.provider||'manual';if((data.type||'copy')==='copy'){data.receipts=[];const ctxRecords=await contextRecords(client);await enrich({client,user,run:null,records:ctxRecords},loadModule('05-content',client),[{kind:'Asset',data}]);}}return json(await tx(async c=>{if(kind==='DesignTemplate'&&data.is_default)await c.query("UPDATE records SET data=jsonb_set(data,'{is_default}','false'::jsonb,true),updated_at=now() WHERE client_id=$1 AND kind='DesignTemplate' AND id IS DISTINCT FROM $2 AND status<>'archived'",[client.id,b.id||null]);if(kind==='Strategy')return upsertStrategy(c,user,client.id,title,data,{replace_id:b.id||null});if(!b.id)return insert(c,user,client.id,kind,title,data);const old=await record(c,client.id,b.id,kind);if(['approved','scheduled','published','awaiting_review','archived'].includes(old.status))fail('This version is locked. Create a revision to edit it.');const result=(await c.query('UPDATE records SET title=$2,data=$3,updated_at=now() WHERE id=$1 RETURNING *',[b.id,title,data])).rows[0];await audit(c,user,client.id,'edit:'+kind,b.id);return result;}));}
 if(action==='submit-approval'){loadModule('07-approve',client);return json(await tx(c=>submit(c,user,client.id,b.id)));}
+if(action==='save-picture-version'){
+ loadModule('06-design-video',client);
+ return json(await tx(async c=>{
+  const old=(await c.query("SELECT * FROM records WHERE client_id=$1 AND id=$2 AND kind='Asset' FOR UPDATE",[client.id,b.id])).rows[0];
+  if(old?.status!=='draft'||old.data?.type!=='image')fail('Choose a picture draft.');
+  const original=old.data.files?.find(f=>f.id===b.source_file_id&&['image/png','image/jpeg','image/webp'].includes(f.mime));
+  if(!original)fail('The source picture has changed. Reopen the draft.');
+  const file=(await c.query("SELECT id,name,mime FROM files WHERE client_id=$1 AND id=$2 AND mime='image/png'",[client.id,b.file_id])).rows[0];
+  if(!file)fail('Choose a PNG from this workspace.');
+  const versions=(await c.query("SELECT * FROM records WHERE parent_id=$1 AND client_id=$2 ORDER BY version DESC",[old.id,client.id])).rows;
+  const existing=versions.find(v=>v.data.picture_edit_file_id===file.id);
+  if(existing)return existing;
+  const data={...old.data,files:[file],picture_edit_file_id:file.id,render_status:'completed',render_engine:'Picture editor',checks:[]};
+  for(const key of ['design_checks','reference_fidelity','render_error'])delete data[key];
+  return insert(c,user,client.id,'Asset',old.title,data,'draft',{version:Math.max(old.version,versions[0]?.version||0)+1,parent_id:old.id});
+ }));
+}
 if(action==='revise'){return json(await tx(async c=>{const old=await record(c,client.id,b.id);if(!['Asset','Strategy'].includes(old.kind))fail('Only assets and strategies can be revised');const data={...old.data};if(old.kind==='Asset')data.checks=checks(data);return insert(c,user,client.id,old.kind,old.title,data,'draft',{version:old.version+1,parent_id:old.id});}));}
 if(action==='choose-hook'){loadModule('04-hooks',client);return json(await tx(async c=>{const old=await record(c,client.id,b.id,'Idea');if(!Number.isInteger(b.index)||!old.data.hooks?.[b.index])fail('Invalid hook');const chosen=old.data.hooks[b.index];const nextIdea={...old.data,selected_hook:b.index};await c.query('UPDATE records SET data=$2,updated_at=now() WHERE id=$1',[old.id,nextIdea]);
  // Mirror the chosen day-script onto the matching calendar slot so the plan grid shows the selection.

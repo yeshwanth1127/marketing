@@ -6,6 +6,9 @@
  "periodSeconds": 4,
  "visualScale": 1,
  "rotation": 0,
+ "offsetX": 0,
+ "offsetY": 0,
+ "crop": 0,
  "safeTop": 14,
  "safeBottom": 20
 }

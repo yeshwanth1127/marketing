@@ -6,7 +6,7 @@ import {routeMessage,RoutingUnavailable} from './router.mjs';
 import {execute,nextQuestion,prefill} from './execute.mjs';
 import {buildPack,localTalk,talkAnswer} from './talk.mjs';
 import {askText,cardsFrom,confirmText,fieldQuestion,resultText} from './replies.mjs';
-import {buildGuidance,nextActions,wantsGuidance} from './guide.mjs';
+import {buildGuidance,nextActions,wantsGuidance,wantsTalk} from './guide.mjs';
 import {KEEP,isStrategyDraft,strategyConfirm,strategyDefaults,strategyQuestion} from './strategy-fields.mjs';
 
 const questionFor=(tool,args,field,client)=>isStrategyDraft(tool,args)?strategyQuestion(field,args,client):fieldQuestion(field);
@@ -163,15 +163,16 @@ export async function runTurn({user,client,body,send,thread}){
   if(thread.slot?.tool){
    const tool=toolById(thread.slot.tool,tools);
    let args={...thread.slot.args};
+   const field=nextQuestion(tool,args,client);
    args=withDefaults(tool,prefill(tool,args,message,fileIds),client);
-   let field=nextQuestion(tool,args,client);
    if(!field){await afterFields(thread,tool,args,ctx,send);return;}
    if(!message&&!fileIds.length){const text=questionFor(tool,args,field,client);const actions=field.key==='file_ids'?[{id:tool.id+'-upload',label:'Upload brand files',tool:tool.id,args,needsUpload:true},{id:tool.id,label:'Use attached files',tool:tool.id,args}]:[];await say(thread,'assistant',text,{ask:field.key,slot:tool.id,actions});send('ask',{text});send('result',{text});return;}
-   if(!message&&fileIds.length&&field?.key==='file_ids'){await afterFields(thread,tool,args,ctx,send);return;}
-   if(!field.required&&SKIP.test(message))args['__skip_'+field.key]=true;
+   if(args[field.key]===undefined){
+    if(!field.required&&SKIP.test(message))args['__skip_'+field.key]=true;
    else if(args['__default_'+field.key]&&KEEP.test(message))args[field.key]=args['__default_'+field.key];
    else if(field.required&&SKIP.test(message)){const text=questionFor(tool,args,field,client);await say(thread,'assistant',text,{ask:field.key});send('ask',{text});send('result',{text});return;}
-   else args[field.key]=message;
+    else args[field.key]=message;
+   }
    const more=nextQuestion(tool,args,client);
    if(more){
     await saveThread(thread,{slot:{tool:tool.id,args},pending:null});
@@ -200,9 +201,10 @@ export async function runTurn({user,client,body,send,thread}){
    const pack=await buildPack(client,user,{threadId:thread.id,message});
    const answer=await talkAnswer(pack,message);
    const actions=nextActions(client,user,tools,await missingStep(client),{});
-   await say(thread,'assistant',answer.text,{talk:true,actions});
-   send('talk',{text:answer.text,actions});
-   send('result',{text:answer.text,actions,talk:true});
+   const text=answer.disconnected&&wantsTalk(message)?localTalk(pack,message):answer.text;
+   await say(thread,'assistant',text,{talk:true,actions});
+   send('talk',{text,actions});
+   send('result',{text,actions,talk:true});
    return;
   }
   if(decision.type==='ask'||decision.type==='refuse'){

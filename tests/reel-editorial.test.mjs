@@ -13,9 +13,9 @@ for(const [industry,title] of [['Restaurant','The lunch menu'],['SaaS','Review t
   const reel=applyRail(design,plan,0,{brand:industry});assert.deepEqual(validateDesign(reel),[]);
   assert.equal(reel.beats.reduce((n,b)=>n+b.duration,0),15);
   const html=designToHtml(reel);assert.ok(html.includes(title));assert.ok(!/waistband|shorts|size tag/i.test(html));assert.equal(html,designToHtml(reel));
-  const edit=applyPatch(reel,[{op:'replace',path:'/layout/rail/caption',value:'Your next step'},{op:'replace',path:'/layout/rail/file_id',value:image}]);
+  const edit=applyPatch(reel,[{op:'replace',path:'/layout/rail/caption',value:'Your next step'},{op:'replace',path:'/layout/rail/file_id',value:image},{op:'replace',path:'/layout/rail/style/offsetX',value:12},{op:'replace',path:'/layout/rail/style/crop',value:1}]);
   assert.deepEqual(fileIdsIn(edit),[image]);assert.notEqual(beatKey(reel,0),beatKey(edit,0));
-  for(let i=0;i<edit.beats.length;i++){const frame=designToHtml(edit,{only:i,mode:'render'});assert.ok(frame.includes(image));if(i===0)assert.ok(frame.includes('Your next step'));}
+  for(let i=0;i<edit.beats.length;i++){const frame=designToHtml(edit,{only:i,mode:'render'});assert.ok(frame.includes(image));assert.ok(frame.includes('object-fit:cover;transform:translate(12%,0%)'));if(i===0)assert.ok(frame.includes('Your next step'));}
   assert.ok(!designToHtml(design).includes('class="product-lane"'));
  });
 }

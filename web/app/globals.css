@@ -581,6 +581,14 @@ button.file-row.strategy-row:hover{background:var(--soft)}
 
 /* Video editor (web/components/VideoEditor.tsx) */
 .vd-editor{display:flex;flex-direction:column;gap:12px}
+.vd-editor{container-type:inline-size}
+.vd-pictures{min-width:0;display:grid;align-content:start;gap:12px}
+.picture-draft-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(180px,32%);gap:20px;align-items:start}.picture-draft-preview{display:block;width:100%;height:auto;background:#eee}.picture-draft-grid .vd-pictures{padding:4px}
+@container (max-width:540px){.picture-draft-grid{grid-template-columns:1fr}}
+.vd-pictures h3{margin:0}.vd-pictures input,.vd-pictures select{max-width:100%}
+@container (min-width:840px){.vd-grid.vd-with-pictures{grid-template-columns:270px minmax(180px,0.8fr) minmax(260px,1.2fr)}}
+@container (min-width:580px) and (max-width:839px){.vd-grid.vd-with-pictures{grid-template-columns:270px minmax(0,1fr)}.vd-with-pictures .vd-panels{grid-column:1/-1}}
+@container (max-width:579px){.vd-grid.vd-with-pictures{grid-template-columns:minmax(0,1fr)}}
 .vd-grid{display:grid;grid-template-columns:290px 1fr;gap:18px;align-items:start}
 @media (max-width:820px){.vd-grid{grid-template-columns:1fr}}
 .vd-stage{display:flex;flex-direction:column;gap:8px}

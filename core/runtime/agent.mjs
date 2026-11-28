@@ -6,7 +6,7 @@ import fs from 'node:fs';import os from 'node:os';import path from 'node:path';i
 import {ROOT,q,id} from '../db/index.mjs';
 import {prepareDmp} from '../tools/dmp.mjs';
 import {python} from '../tools/runner.mjs';
-import {claudeBinary,claudeInput} from './claude-cli.mjs';
+import {claudeBinary,claudeInput,cliArgs} from './claude-cli.mjs';
 import {buildPromptSpecification,renderPromptSpecification,promptMetadata} from './prompts/prompt-builder.mjs';
 
 const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
@@ -20,7 +20,7 @@ export function buildBox(mod,skills,ctx,opts={}){
  for(const s of skills){
   const src=path.join(mod.dir,'skills',s.name),dest=path.join(box,'skills',s.name);
   fs.cpSync(src,dest,{recursive:true});
-  for(const f of fs.readdirSync(dest,{recursive:true}).map(String))if(SCRIPT_EXT.test(f)){
+  for(const f of fs.readdirSync(dest,{recursive:true}).map(f=>String(f).split(path.sep).join('/')))if(SCRIPT_EXT.test(f)){
    const rel=`skills/${s.name}/${f}`;const runner=f.endsWith('.mjs')?'node':'python3';
    allowed.push(`Bash(${runner} ${rel}:*)`);if(runner==='python3')allowed.push(`Bash(python3 -I ${rel}:*)`);scriptOwner[rel]={skill:s.name,source:s.source,file:f,abs:path.join(src,f)};}
  }
@@ -31,7 +31,7 @@ export function buildBox(mod,skills,ctx,opts={}){
  if(python()==='python3')fs.symlinkSync('/usr/bin/python3',path.join(box,'bin','python3'));
  // A virtualenv's python only finds its packages when started from its own folder, so wrap it instead of symlinking it from here.
  else{const wrapper=path.join(box,'bin','python3');fs.writeFileSync(wrapper,`#!/bin/sh\nexec "${python()}" "$@"\n`);fs.chmodSync(wrapper,0o755);}
- env.PATH=path.join(box,'bin')+':'+env.PATH;
+ env.PATH=path.join(box,'bin')+path.delimiter+env.PATH;
  if(skills.some(s=>s.source==='DMP')){
   fs.cpSync(DMP_SCRIPTS,path.join(box,'scripts'),{recursive:true});
   for(const s of skills.filter(s=>s.source==='DMP')){
@@ -155,7 +155,7 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
   if(useModel)args.push('--model',useModel);
   if(useEffort)args.push('--effort',useEffort);
   const {code,stdout,stderr}=await new Promise(resolve=>{
-   const child=spawn(claudeBinary(),args,{cwd:box,env,stdio:['pipe','pipe','pipe']});
+   const child=spawn(...cliArgs(claudeBinary(),args),{cwd:box,env,stdio:['pipe','pipe','pipe']});
    let stdout='',stderr='',done=false;const cap=16*1024*1024;
    const finish=v=>{if(!done){done=true;clearTimeout(t);resolve(v);}};
    const t=setTimeout(()=>{child.kill('SIGTERM');finish({code:-1,stdout,stderr:'Claude timed out'});},timeoutMs);
@@ -180,7 +180,7 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
     continue;}
    const buf=fs.readFileSync(owner.abs);let vendorMatch=false;
    const vendorPath=owner.shared?path.join(ROOT,'vendor/digital-marketing-pro/scripts',owner.file):null;
-   try{if(vendorPath)vendorMatch=fs.readFileSync(vendorPath).equals(buf);else{const meta=(mod.skills||[]).find(s=>s.name===owner.skill);vendorMatch=fs.readFileSync(path.join(ROOT,'vendor',path.dirname(meta.path),owner.file)).equals(buf);}}catch{}
+   try{if(vendorPath)vendorMatch=fs.readFileSync(vendorPath,'utf8').replaceAll('\r\n','\n')===buf.toString('utf8').replaceAll('\r\n','\n');else{const meta=(mod.skills||[]).find(s=>s.name===owner.skill);vendorMatch=fs.readFileSync(path.join(ROOT,'vendor',path.dirname(meta.path),owner.file),'utf8').replaceAll('\r\n','\n')===buf.toString('utf8').replaceAll('\r\n','\n');}}catch{}
    const md=fs.readFileSync(path.join(mod.dir,'skills',owner.skill,'SKILL.md'));
    const rid=id();receipts.push(rid);
    await q(`INSERT INTO tool_runs(id,client_id,run_id,module,skill,source,script,skill_sha256,script_sha256,vendor_match,input_sha256,output_sha256,exit_code,duration_ms,error,created_by)
@@ -194,5 +194,5 @@ export async function runAgent(ctx,mod,skills,sample,{timeoutMs=600000,maxTurns=
   if(fs.existsSync(outFile))outputs=JSON.parse(fs.readFileSync(outFile,'utf8'));
   else if(requireOutput)throw new Error('Claude finished without writing output.json');
   return {outputs,collected,receipts,duration_ms:Date.now()-started,said:finalText(stdout),...(capturePrompt?{prompt}:{})};
- }finally{fs.rmSync(box,{recursive:true,force:true});}
+ }finally{await fs.promises.rm(box,{recursive:true,force:true,maxRetries:8,retryDelay:250});}
 }

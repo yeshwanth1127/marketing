@@ -46,7 +46,7 @@ export async function runMonthJob(job){
   for(const stage of MONTH_STAGES){
    if(stage.key==='seo'&&!inputs.seo&&!(inputs.channels||[]).some(c=>/seo/i.test(c))){progress.skip(stage.key,'SEO not in this package');continue;}
    if(stage.key==='ads'&&!(inputs.ads>0)){progress.skip(stage.key,'No ad variants requested');continue;}
-   if(stage.key==='designs'&&!inputs.with_designs){results.designs={done:true,queued:[],skipped:true};progress.skip(stage.key,'Month focused on ideas + scripts; queue designs later from Design & video');continue;}
+   if(stage.key==='designs'&&!inputs.with_designs){results.designs={done:true,queued:[],skipped:true};progress.keep('designs',results.designs);progress.skip(stage.key,'Month focused on ideas + scripts; queue designs later from Design & video');continue;}
    if(prior[stage.key]?.done){progress.reuse(stage.key,'reused');continue;}
    progress.start(stage.key);
    try{

@@ -2,11 +2,12 @@
 import {test,after} from 'node:test';import assert from 'node:assert/strict';
 import fs from 'node:fs';import os from 'node:os';import path from 'node:path';import zlib from 'node:zlib';import crypto from 'node:crypto';
 import {chromium} from 'playwright';
-import {handle} from '../core/api.mjs';import {q,pool,ROOT} from '../core/db/index.mjs';
+import {handle,perform} from '../core/api.mjs';import {q,pool,ROOT} from '../core/db/index.mjs';
 import {compose,profileFor,catalog,LAYOUTS,isProductPost,defaultLayout,templateFrames} from '../core/design/brand-profile.mjs';
 import {lintSlots} from '../modules/06-design-video/skills/exora-design-system/engine/index.mjs';
 import {cornerLabels} from '../modules/06-design-video/skills/exora-design-system/engine/layouts/index.mjs';
 import {pageChecks,MARGIN,CANVAS} from '../core/design/checks.mjs';
+import {pathToFileURL} from 'node:url';
 import {chromePath,absolutize} from '../core/design/compose.mjs';
 import {imageInfo,productImagesFor,manifestOf} from '../core/design/product-images.mjs';
 after(async()=>pool.end());
@@ -60,8 +61,8 @@ test('imageInfo reads size and alpha from PNG, JPEG and WebP headers',()=>{
 });
 test('absolutize points ../assets/ files at the real uploads, and leaves other paths alone',()=>{
  const html='<img src="../assets/01-look.png"><img src="../assets/02-other.png"><img src="../fonts/x.woff">';
- const out=absolutize(html,null,[{file:'assets/01-look.png',abs:'/data/uploads/abc.png'}]);
- assert.match(out,/src="file:\/\/\/data\/uploads\/abc\.png"/);assert.match(out,/\.\.\/assets\/02-other\.png/);assert.doesNotMatch(out,/\.\.\/fonts\//);
+ const out=absolutize(html,null,[{file:'assets/01-look.png',abs:path.resolve('data/uploads/abc.png')}]);
+ assert.ok(out.includes('src="'+pathToFileURL(path.resolve('data/uploads/abc.png')).href+'"'));assert.match(out,/\.\.\/assets\/02-other\.png/);assert.doesNotMatch(out,/\.\.\/fonts\//);
 });
 
 // ---- which posts get the campaign layout ----
@@ -135,16 +136,16 @@ after(async()=>{await browser?.close();if(work)fs.rmSync(work,{recursive:true,fo
 async function check(html,format='portrait',mutate){
  const page=await browser.newPage({viewport:{width:CANVAS[format][0],height:CANVAS[format][1]}});
  try{
-  const f=path.join(work,crypto.randomUUID()+'.html');fs.writeFileSync(f,html);await page.goto('file://'+f,{waitUntil:'load'});
+  const f=path.join(work,crypto.randomUUID()+'.html');fs.writeFileSync(f,html);await page.goto(pathToFileURL(f).href,{waitUntil:'load'});
   await page.waitForFunction(()=>document.body.dataset.ready==='1',null,{timeout:15000});
   if(mutate)await page.evaluate(mutate);
   return await page.evaluate(eval(pageChecks),{format,margin:MARGIN[format],banned:[]});
  }finally{await page.close();}
 }
 test('rendered campaign posts have no design-check errors in every placement and mode',async()=>{
- const modes={photo:{...GOOD,photo:'file://'+photoFile},cutout:{...GOOD,cutout:'file://'+cutFile,backdrop:'grey'},typographic:{...GOOD,backdrop:'charcoal'},placeholder:{...GOOD,placeholder:true}};
+ const modes={photo:{...GOOD,photo:pathToFileURL(photoFile).href},cutout:{...GOOD,cutout:pathToFileURL(cutFile).href,backdrop:'grey'},typographic:{...GOOD,backdrop:'charcoal'},placeholder:{...GOOD,placeholder:true}};
  for(const [m,slots] of Object.entries(modes))for(const format of ['portrait','square','reel','landscape']){
-  const html=compose({layout:'campaign',slots,profile:fashion,catalog:catalog(),format,fontBase:'file://'+path.join(ROOT,'exora/fonts')})[0];
+  const html=compose({layout:'campaign',slots,profile:fashion,catalog:catalog(),format,fontBase:pathToFileURL(path.join(ROOT,'exora/fonts')).href})[0];
   const issues=await check(html,format);
   assert.deepEqual(issues.filter(i=>i.severity==='error'),[],m+' '+format+': '+JSON.stringify(issues.filter(i=>i.severity==='error')));
   if(m==='typographic'&&format==='portrait')assert.ok(issues.some(i=>i.type==='campaign_no_product'),'a typographic poster is flagged as needing a photo');
@@ -152,7 +153,7 @@ test('rendered campaign posts have no design-check errors in every placement and
  }
 });
 test('the page check fails slop: filler, emoji, arrows, cards, numbered circles, buttons, a second headline',async()=>{
- const html=compose({layout:'campaign',slots:{...GOOD,photo:'file://'+photoFile},profile:fashion,catalog:catalog(),format:'portrait',fontBase:'file://'+path.join(ROOT,'exora/fonts')})[0];
+ const html=compose({layout:'campaign',slots:{...GOOD,photo:pathToFileURL(photoFile).href},profile:fashion,catalog:catalog(),format:'portrait',fontBase:pathToFileURL(path.join(ROOT,'exora/fonts')).href})[0];
  const types=async mutate=>(await check(html,'portrait',mutate)).filter(i=>i.severity==='error').map(i=>i.type);
  assert.deepEqual(await types(),[],'the clean post has none');
  assert.ok((await types(()=>{document.querySelector('.support').textContent='Elevate your look, seamlessly.';})).includes('campaign_filler_phrase'));
@@ -165,7 +166,7 @@ test('the page check fails slop: filler, emoji, arrows, cards, numbered circles,
  assert.ok((await types(()=>{document.querySelector('.support').textContent=Array(30).fill('word').join(' ');})).includes('campaign_word_count'));
 });
 test('other layouts are not held to the campaign rules',async()=>{
- const html=compose({layout:'list',slots:samples['kaveri-dental'].list,profile:fashion,catalog:catalog(),format:'portrait',fontBase:'file://'+path.join(ROOT,'exora/fonts')})[0];
+ const html=compose({layout:'list',slots:samples['kaveri-dental'].list,profile:fashion,catalog:catalog(),format:'portrait',fontBase:pathToFileURL(path.join(ROOT,'exora/fonts')).href})[0];
  assert.ok(!(await check(html)).some(i=>String(i.type).startsWith('campaign_')));
 });
 
@@ -180,6 +181,21 @@ async function upload(name,buf,area='uploads'){
  const id=crypto.randomUUID(),rel=`${area}/${id}.png`,full=path.join(ROOT,'.local',rel);fs.mkdirSync(path.dirname(full),{recursive:true});fs.writeFileSync(full,buf);
  await q('INSERT INTO files(id,client_id,name,mime,size,storage_path) VALUES($1,$2,$3,$4,$5,$6)',[id,client.id,name,'image/png',buf.length,rel]);return id;
 }
+test('editing a picture creates a new draft and a repeated save returns that version',async()=>{
+ const original=await upload('original.png',png(64,80));
+ const edited=await upload('edited.png',png(64,80,{rgba:true}));
+ const save=async body=>{const r=await perform(user,{client_id:client.id,...body});return {status:r.status,data:await r.json()};};
+ const draft=await save({action:'save-record',kind:'Asset',title:'Picture edit',data:{type:'image',files:[{id:original,name:'original.png',mime:'image/png'}]}});
+ assert.equal(draft.status,200);
+ const action={action:'save-picture-version',id:draft.data.id,source_file_id:original,file_id:edited};
+ const version=await save(action);assert.equal(version.status,200,JSON.stringify(version.data));
+ assert.equal(version.data.parent_id,draft.data.id);assert.equal(version.data.version,draft.data.version+1);
+ assert.equal(version.data.data.files[0].id,edited);assert.equal((await save(action)).data.id,version.data.id);
+ const previous=(await q('SELECT data FROM records WHERE id=$1',[draft.data.id])).rows[0];
+ assert.equal(previous.data.files[0].id,original);
+ assert.equal((await save({...action,file_id:crypto.randomUUID()})).status,400);
+});
+
 test('only real product photos are offered: not brand guides, banners, diagrams or earlier renders',async()=>{
  const look=await upload('product-polo.png',png(60,80));const cut=await upload('hoodie cutout.png',png(60,80,{rgba:true}));
  await upload('Fabblen hero banner.png',png(60,80));await upload('mermaid-diagram.png',png(60,80));await upload('logo-product.png',png(60,80));

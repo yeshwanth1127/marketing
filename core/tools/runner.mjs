@@ -16,7 +16,7 @@ function vendorShas(){
  return inventoryShas;
 }
 export function python(){
- const venv=path.join(ROOT,'.local/pyenv/bin/python');
+ const venv=path.join(ROOT,process.platform==='win32'?'.local/pyenv/Scripts/python.exe':'.local/pyenv/bin/python');
  return process.env.EXORA_PYTHON||(fs.existsSync(venv)?venv:'python3');
 }
 // Whether the content-quality scorers (content quality, brand voice, readability) can run: they need textstat, nltk and NLTK's data.
@@ -64,7 +64,7 @@ export function nltkDataDir(){
 function sandboxEnv(box){
  const dead='http://127.0.0.1:9';
  const nltk=nltkDataDir();
- return {PATH:[...mediaBins(),'/usr/local/bin','/opt/homebrew/bin','/usr/bin','/bin'].join(':'),HOME:box,TMPDIR:box,LANG:'C.UTF-8',LC_ALL:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTHONIOENCODING:'utf-8',
+ return {PATH:[...mediaBins(),...(process.platform==='win32'?[path.dirname(process.execPath),path.dirname(python())]:['/usr/local/bin','/opt/homebrew/bin','/usr/bin','/bin'])].join(path.delimiter),HOME:box,TMPDIR:box,LANG:'C.UTF-8',LC_ALL:'C.UTF-8',PYTHONDONTWRITEBYTECODE:'1',PYTHONIOENCODING:'utf-8',
   ...(nltk?{NLTK_DATA:nltk}:{}),
   http_proxy:dead,https_proxy:dead,HTTP_PROXY:dead,HTTPS_PROXY:dead,ALL_PROXY:dead,NO_PROXY:''};
 }
@@ -105,7 +105,7 @@ export async function runScript(ctx,mod,scriptId,{stdin='',args=[],inputFiles=[]
    vars['file_'+f.param]=dest;}
   const fill=a=>String(a).replace(/\{(\w+)\}/g,(m,k)=>k in vars?vars[k]:m);
   const isNode=spec.file.endsWith('.mjs');
-  const argv=[...(isNode?[]:['-I']),scriptPath,...(spec.args||[]).map(fill),...args.map(fill),...(spec.tail_args||[]).map(fill)];
+  const argv=[...(isNode?[]:['-I','-X','utf8']),scriptPath,...(spec.args||[]).map(fill),...args.map(fill),...(spec.tail_args||[]).map(fill)];
   const cap=4*1024*1024;
   result=await new Promise(resolve=>{
    const child=spawn(isNode?process.execPath:py,argv,{cwd:work,env,stdio:['pipe','pipe','pipe']});
@@ -130,10 +130,10 @@ export async function runScript(ctx,mod,scriptId,{stdin='',args=[],inputFiles=[]
  if(!error&&!acceptable)error=(result.err||result.out||'script failed').slice(-1000);
  if(!error){if(spec.output==='json'){try{output=JSON.parse(result.out);}catch{error='script did not return JSON';}}else output=result.out;}
  // Copies of SKILL.md carry one appended attribution comment; strip it to compare with the pinned vendor file.
- const vendorSkillSha=sha(skillMd.toString('utf8').replace(/\n\n<!-- EXORA source: [^>]*-->\n$/,''));
+ const vendorSkillSha=sha(skillMd.toString('utf8').replaceAll('\r\n','\n').replace(/\n\n<!-- EXORA source: [^>]*-->\n$/,''));
  let scriptMatches=false;
  const vendorScript=shared?path.join(ROOT,'vendor/digital-marketing-pro/scripts',spec.file):path.join(ROOT,'vendor',path.dirname(meta.path||''),spec.file);
- try{scriptMatches=fs.readFileSync(vendorScript).equals(scriptBuf);}catch{}
+ try{scriptMatches=fs.readFileSync(vendorScript,'utf8').replaceAll('\r\n','\n')===scriptBuf.toString('utf8').replaceAll('\r\n','\n');}catch{}
  await q(`INSERT INTO tool_runs(id,client_id,run_id,module,skill,source,script,skill_sha256,script_sha256,vendor_match,input_sha256,output_sha256,exit_code,duration_ms,error,created_by)
   VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)`,
   [receipt,ctx.client.id,ctx.run||null,mod.key,spec.skill,meta.source||null,spec.file,sha(skillMd),sha(scriptBuf),vendorShas().has(vendorSkillSha)&&scriptMatches,sha(JSON.stringify({stdin,args})),acceptable?sha(result.out):null,result.code,Date.now()-started,error,ctx.user?.id||null]);

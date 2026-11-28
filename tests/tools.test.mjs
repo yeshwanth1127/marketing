@@ -21,7 +21,7 @@ function direct(mod,spec,input){
   if(spec.scripts==='dmp')fs.cpSync(DMP,path.join(box,'scripts'),{recursive:true});
   const script=spec.scripts==='dmp'?path.join(box,'scripts',spec.file):vendorScript;
   const fill=a=>String(a).replaceAll('{input_file}',inputFile).replaceAll('{skill_dir}',work);
-  const r=spawnSync(python(),['-I',script,...(spec.args||[]).map(fill),...input.args.map(fill)],{cwd:spec.scripts==='dmp'?box:work,input:input.stdin,encoding:'utf8',env:{PATH:process.env.PATH,HOME:box,TMPDIR:box,LANG:'C.UTF-8',PYTHONIOENCODING:'utf-8',CLAUDE_MARKETING_HOME:path.join(box,'cm'),...(fs.existsSync(path.join(ROOT,'.local/nltk_data'))?{NLTK_DATA:path.join(ROOT,'.local/nltk_data')}:{})}});
+  const r=spawnSync(python(),['-I','-X','utf8',script,...(spec.args||[]).map(fill),...input.args.map(fill)],{cwd:spec.scripts==='dmp'?box:work,input:input.stdin,encoding:'utf8',env:{PATH:process.env.PATH,HOME:box,TMPDIR:box,LANG:'C.UTF-8',PYTHONIOENCODING:'utf-8',CLAUDE_MARKETING_HOME:path.join(box,'cm'),...(fs.existsSync(path.join(ROOT,'.local/nltk_data'))?{NLTK_DATA:path.join(ROOT,'.local/nltk_data')}:{})}});
   let out=r.stdout;if(spec.output_file&&fs.existsSync(path.join(box,spec.output_file)))out=fs.readFileSync(path.join(box,spec.output_file),'utf8');
   return {status:r.status,out:spec.output==='json'?JSON.parse(out):out,err:r.stderr};
  }finally{fs.rmSync(box,{recursive:true,force:true});}
@@ -78,7 +78,7 @@ test('add-soundtrack (real-sound mux.mjs) writes a video with sound as a client 
  const {args,stdin,files}=buildInput(spec,{video,audio});
  const r=await runToolForClient({client:c,user,moduleKey:'06-design-video',toolId:'add-soundtrack',args,stdin,files});
  assert.equal(r.files.length,1);const row=(await q('SELECT * FROM files WHERE id=$1',[r.files[0].id])).rows[0];assert.equal(row.mime,'video/mp4');
- const ffprobe=[path.join(ROOT,'node_modules/@ffprobe-installer',`${process.platform}-${process.arch}`,'ffprobe'),'/usr/bin/ffprobe'].find(p=>fs.existsSync(p))||'ffprobe';
+ const ffprobe=process.env.FFPROBE_BIN||[path.join(ROOT,'node_modules/@ffprobe-installer',`${process.platform}-${process.arch}`,'ffprobe'),'/usr/bin/ffprobe'].find(p=>fs.existsSync(p))||'ffprobe';
  const probe=spawnSync(ffprobe,['-v','error','-show_entries','stream=codec_type','-of','csv=p=0',path.join(ROOT,'.local',row.storage_path)],{encoding:'utf8'}).stdout;
  assert.match(probe,/video/);assert.match(probe,/audio/);
  assert.equal((await q('SELECT vendor_match FROM tool_runs WHERE id=$1',[r.receipt])).rows[0].vendor_match,true);

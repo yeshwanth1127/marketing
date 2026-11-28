@@ -1,5 +1,6 @@
 // Claude composes static designs (image / carousel) with the EXORA design engine + the client's brand profile,
 // renders previews with tools/preview.mjs, looks at them and fixes issues before the final render.
+import {pathToFileURL} from 'node:url';
 import {nodeBrief} from '../clients/tree.mjs';
 // Creatives carry the brand's name; a product is named as what is being promoted.
 const forWhom=c=>c.node_type==='product'?`${c.brand_name} (promoting the product "${c.name}")`:(c.brand_name||c.name);
@@ -31,13 +32,13 @@ export function brandFiles(brand,client,{prefix='',theme=null}={}){
 }
 // Slides reference ../fonts and ../logo.*; point them at the real files for the final render.
 // `assets` are the product images copied into the designer's folder as ../assets/NN-name; point them at the real files too.
-export const absolutize=(html,logoAbs,assets=[])=>{let out=html.replaceAll('../fonts/','file://'+FONTS+'/').replace(/(["'(])\.\.\/logo\.[a-z]+/g,(m,q)=>logoAbs?q+'file://'+logoAbs:m);for(const a of assets)out=out.replaceAll('../'+a.file,'file://'+a.abs);return out;};
+export const absolutize=(html,logoAbs,assets=[])=>{let out=html.replaceAll('../fonts/',pathToFileURL(FONTS).href+'/').replace(/(["'(])\.\.\/logo\.[a-z]+/g,(m,q)=>logoAbs?q+pathToFileURL(logoAbs).href:m);for(const a of assets)out=out.replaceAll('../'+a.file,pathToFileURL(a.abs).href);return out;};
 
 export async function composeStatic({client,user,run,records,asset,brand,layout,designTemplate=null}){
  const mod=loadModule('06-design-video',client);
  const skills=mod.skills.filter(s=>STATIC_SKILLS.includes(s.name));
  const frames=frameCount(asset);
- const tool=fs.readFileSync(path.join(ROOT,'core/design/preview-tool.mjs'),'utf8').replaceAll('__ROOT__',ROOT).replaceAll('__CHROME__',chromePath());
+ const tool=fs.readFileSync(path.join(ROOT,'core/design/preview-tool.mjs'),'utf8').replaceAll('__ROOT__',pathToFileURL(ROOT).href).replaceAll("'__CHROME__'",JSON.stringify(chromePath()));
  // Apparel and other physical products get studio campaign posts with a real product as the hero, not text cards.
  const wanted=layout&&LAYOUTS[layout]?layout:(isProductPost(client,asset)?'campaign':null);
  // Files the brand kit or the saved theme were read from are brand material, never the product.
@@ -155,7 +156,7 @@ export async function ensureHyperframesChecks({dir,rows,client,user,run,mod,hfBi
  const ran=[],ids=[];
  const have=re=>rows.some(r=>re.test(`${r.skill||''} ${r.script||''}`.toLowerCase()));
  const todo=[['lint',/hyperframes\s+lint/,['lint',dir]],['check',/hyperframes\s+check/,['check',dir,'--json']]];
- const env={...process.env,HYPERFRAMES_NO_TELEMETRY:'1',DO_NOT_TRACK:'1',HYPERFRAMES_BROWSER_PATH:chromePath(),HYPERFRAMES_CONFIG_DIR:path.join(ROOT,'.local/hyperframes')};
+ const env={...process.env,CI:'1',HYPERFRAMES_NO_TELEMETRY:'1',HYPERFRAMES_NO_UPDATE_CHECK:'1',DO_NOT_TRACK:'1',HYPERFRAMES_BROWSER_PATH:chromePath(),HYPERFRAMES_CONFIG_DIR:path.join(ROOT,'.local/hyperframes')};
  const sha=v=>crypto.createHash('sha256').update(v).digest('hex');
  for(const [name,re,args] of todo){
   if(have(re))continue;
@@ -180,7 +181,7 @@ export async function composeVideo({client,user,run,records,asset,brand,keepDir,
  const skillList=skills.map(s=>'skills/'+s.name+'/SKILL.md').join(', ');
  const hfBin=path.join(ROOT,'node_modules/hyperframes/bin/hyperframes.mjs');
  const hfVersion=JSON.parse(fs.readFileSync(path.join(ROOT,'node_modules/hyperframes/package.json'),'utf8')).version;
- const shim=`#!/bin/sh\nexport HYPERFRAMES_NO_TELEMETRY=1 DO_NOT_TRACK=1 HYPERFRAMES_BROWSER_PATH="${chromePath()}" HYPERFRAMES_CONFIG_DIR="${path.join(ROOT,'.local/hyperframes')}"\nexec "${process.execPath}" "${hfBin}" "$@"\n`;
+ const shim=`#!/bin/sh\nexport CI=1 HYPERFRAMES_NO_TELEMETRY=1 HYPERFRAMES_NO_UPDATE_CHECK=1 DO_NOT_TRACK=1 HYPERFRAMES_BROWSER_PATH="${chromePath()}" HYPERFRAMES_CONFIG_DIR="${path.join(ROOT,'.local/hyperframes')}"\nexec "${process.execPath}" "${hfBin}" "$@"\n`;
  const {logoIsMark}=await import('./video-from-skills.mjs');
  const logo_path=logoIsMark(brand?.logo_path)?brand.logo_path:null;
  const copy={...reelScreenCopy(asset,client),evidence:Array.isArray(brand.evidence)?brand.evidence.filter(e=>e.verified):[]};

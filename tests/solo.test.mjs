@@ -29,7 +29,7 @@ test('Packages copy counts, never content',()=>{
 });
 test('Catalog exposes month tools without banned export ids',()=>{
  const ids=allTools().map(t=>t.id);
- assert.ok(ids.includes('draft_month'));assert.ok(ids.includes('ready_check'));assert.ok(ids.includes('month_pack'));
+ assert.ok(!ids.includes('draft_month'),'month production uses the dedicated month form');assert.ok(ids.includes('ready_check'));assert.ok(ids.includes('month_pack'));
  assert.equal(ids.some(id=>/export/i.test(id)),false);
 });
 test('Sign in and create a solo test client',async()=>{

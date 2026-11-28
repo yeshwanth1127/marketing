@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 // Test double for the Claude Code CLI: behaves like a headless run that uses a skill script via Bash.
+import path from 'node:path';
 import {spawnSync} from 'node:child_process';import fs from 'node:fs';
 const a=process.argv.slice(2);
 if(a[0]==='auth'){console.log(JSON.stringify({loggedIn:true,authMethod:'test'}));process.exit(0);}
@@ -44,7 +45,10 @@ for(const cmd of commands){
  const idd='toolu_'+(++n);emit({type:'assistant',message:{content:[{type:'tool_use',id:idd,name:'Bash',input:{command:cmd}}]}});
  const ok=allowed.some(p=>{const m=p.match(/^Bash\((.*):\*\)$/);return m&&cmd.startsWith(m[1]);});
  if(!ok){emit({type:'user',message:{content:[{type:'tool_result',tool_use_id:idd,is_error:true,content:'Permission denied'}]}});continue;}
- const r=spawnSync('bash',['-c',cmd],{encoding:'utf8',env:process.env});
+ const [program,...args]=(cmd.match(/"[^"]*"|\S+/g)||[]).map(s=>s.replace(/^"|"$/g,''));
+ const executable=program==='python3'?process.env.EXORA_PYTHON||program:process.execPath;
+ if(program==='hyperframes')args.unshift(path.join(process.env.EXORA_ROOT||path.resolve(import.meta.dirname,'..'),'node_modules/hyperframes/bin/hyperframes.mjs'));
+ const r=spawnSync(executable,args,{encoding:'utf8',env:program==='hyperframes'?{...process.env,CI:'1',HYPERFRAMES_NO_UPDATE_CHECK:'1',HYPERFRAMES_NO_TELEMETRY:'1'}:process.env});
  emit({type:'user',message:{content:[{type:'tool_result',tool_use_id:idd,is_error:r.status!==0,content:(r.stdout||'')+(r.stderr||'')}]}});
 }
 const m=prompt.match(/kinds allowed: [^)]*\):\n([\s\S]*?)\nIn each object/);if(!m){emit({type:'result',result:'done'});process.exit(0);}

@@ -165,7 +165,7 @@ export function strategySectionsFor(client){
 export function strategyFieldsFor(client){
  const level=strategyLevel(client);
  const labels=strategyMeta(client).labels||{};
- return STRATEGY_FIELDS.filter(f=>!f.levels||f.levels.includes(level)).map(f=>({...f,label:labels[f.key]||f.label}));
+ return STRATEGY_FIELDS.filter(f=>!f.levels||f.levels.includes(level)).map(f=>({...f,label:labels[f.key]?(labels[f.key]+(!f.required&&f.label.endsWith(opt)?opt:'')):f.label}));
 }
 
 export function isStrategyDraft(tool,args){return tool?.id==='draft'&&args?.step==='strategy';}

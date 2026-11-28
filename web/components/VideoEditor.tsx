@@ -6,6 +6,7 @@ import ProductImageInput from './ProductImageInput';
 import React,{useEffect,useMemo,useRef,useState} from 'react';
 import {AlertCircle,Loader2,Undo2,Redo2,RotateCcw,Play,Pause,Sparkles,Lock,Unlock,Save,Wand2} from 'lucide-react';
 import {applyPatch,validateDesign,beatStarts,totalSeconds,applyRail,MOTIONS,CORNERS} from '../../core/video/design.mjs';
+import defaultPictureStyle from '../../core/video/style.json';
 import {designToHtml} from '../../core/video/render-html.mjs';
 
 async function call(path:string,body?:any){const r=await fetch('/api/'+path,{method:body?'POST':'GET',headers:body?{'Content-Type':'application/json'}:undefined,body:body?JSON.stringify(body):undefined});const d=await r.json().catch(()=>({}));if(!r.ok)throw new Error(d.error||'Request failed');return d;}
@@ -41,7 +42,7 @@ export default function VideoEditor({record,canEdit,onRendered}:{record:any,canE
   const keys=path.split('/').slice(1);let at=keys.length;for(let i=1;i<=keys.length;i++)if(get(draft,'/'+keys.slice(0,i).join('/'))===undefined){at=i;break;}
   let opPath=path,opValue=value,op=get(draft,path)===undefined?'add':'replace';
   if(at<keys.length){opPath='/'+keys.slice(0,at).join('/');opValue=keys.slice(at).reduceRight((v:any,k)=>({[k]:v}),value);op='add';}
-  setPending(p=>{const kept=p.filter(o=>o.path!==opPath&&!o.path.startsWith(opPath+'/'));return [...kept,{op,path:opPath,value:opValue}];});}
+  setPending(p=>{const kept=p.filter(o=>o.path!==opPath&&!o.path.startsWith(opPath+'/'));const prior=p.find(o=>o.path===opPath);return [...kept,{op:prior?.op==='add'?'add':op,path:opPath,value:opValue}];});}
  function addOps(ops:any[]){setPending(p=>[...p.filter(o=>!ops.some(n=>n.path===o.path)),...ops]);}
  async function save(){if(!pending.length)return srv.head;setBusy('save');try{const r=await call('video-design/patch',{client_id:record.client_id,asset_id:record.id,base:srv.head,ops:pending,note:note||undefined});setPending([]);setNote('');await load();return r.version;}catch(e:any){setErr(e.message);return null;}finally{setBusy('');}}
  async function render(){setBusy('render');try{const v=await save();if(v===null)return;const r=await call('video-design/apply',{client_id:record.client_id,asset_id:record.id,version:v});setErr('');await load();if(r.estimate_seconds)setNote('');}catch(e:any){setErr(e.message);}finally{setBusy('');}}
@@ -60,24 +61,31 @@ export default function VideoEditor({record,canEdit,onRendered}:{record:any,canE
  const fontChoices=fonts.filter((f:any)=>!locked||draft.brand.fonts.includes(f.id));
  const availablePlan=concepts||(draft.layout.rail?.concepts?draft.layout.rail:null);
  const bg=draft.theme.background;const media=srv.media||[];
+ const pictureStyle={...defaultPictureStyle,...draft.layout.rail?.style};
+ const setPictureStyle=(key:string,value:number)=>set('/layout/rail/style',{...pictureStyle,[key]:value});
  const stages=job?.progress?.stages||[];
 
  return <div className="vd-editor">
   <div className="notice compact"><AlertCircle size={16}/><span><b>AI-generated draft:</b> Verify claims and sources before approval.</span></div>
-  <div className="vd-grid">
+  <div className={draft.layout.rail?"vd-grid vd-with-pictures":"vd-grid"}>
    <div className="vd-stage">
     <div className="vd-frame" style={{width:270,height:270*draft.height/draft.width}}>{shown&&<iframe ref={frame} title="Live preview" srcDoc={shown} width={draft.width} height={draft.height} style={{transform:`scale(${270/draft.width})`}} scrolling="no"/>}</div>
     <div className="vd-transport"><button type="button" className="button" onClick={()=>{setPaused(!paused);frame.current?.contentWindow?.postMessage({pause:!paused},'*');}}>{paused?<Play size={14}/>:<Pause size={14}/>}</button><small>{totalSeconds(draft).toFixed(1)}s · {draft.beats.length} beats · live preview</small></div>
     <div className="vd-beats">{draft.beats.map((x:any,i:number)=><button type="button" key={x.id} className={'vd-beat'+(i===bi?' on':'')} onClick={()=>seekBeat(i)} style={{flexGrow:x.duration}} title={x.text.map((w:any)=>w.text).join(' ')}>{x.label||i+1}</button>)}</div>
    </div>
+   {draft.layout.rail&&<aside className="vd-pictures" aria-label="Picture editor"><h3>Edit picture</h3>
+     <label className="field">Product image across all scenes<select disabled={!editable} value={draft.layout.rail.file_id||''} onChange={e=>set('/layout/rail/file_id',e.target.value||null)}><option value="">Generated artwork</option>{media.filter((x:any)=>/^image\/(png|jpeg|webp)$/.test(x.mime)).map((x:any)=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
+     <ProductImageInput disabled={!editable||!!busy} onUpload={async file=>{const form=new FormData();form.set('client_id',record.client_id);form.set('file',file);const r=await fetch('/api/upload',{method:'POST',body:form});const x=await r.json();if(!r.ok)throw Error(x.error);setSrv((v:any)=>({...v,media:[x,...v.media]}));set('/layout/rail/file_id',x.id)}}/>
+<label className="field">Picture fit<select disabled={!editable} value={pictureStyle.crop?'crop':'fit'} onChange={e=>setPictureStyle('crop',e.target.value==='crop'?1:0)}><option value="fit">Fit whole picture</option><option value="crop">Crop to fill</option></select></label>
+{([['offsetX','Horizontal position',-40,40,1],['offsetY','Vertical position',-40,40,1],['visualScale','Product scale',.5,1.4,.05],['rotation','Rotation',-30,30,1],['laneWidth','Product column %',35,62,1],['periodSeconds','Seconds per pass',2,8,.25]] as const).map(([k,label,min,max,step])=><label className="field" key={k}>{label}<input disabled={!editable} type="range" min={min} max={max} step={step} value={pictureStyle[k]} onChange={e=>setPictureStyle(k,Number(e.target.value))}/></label>)}
+<button type="button" className="button" disabled={!editable} onClick={()=>set('/layout/rail/style',{...defaultPictureStyle})}>Reset picture layout</button>
+<a download="style.json" href={'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(pictureStyle,null,2))}>Export style JSON</a>
+</aside>}
    <div className="vd-panels">
-    <details open={!!draft.layout.rail||undefined}><summary>Cover and main visual</summary>
+    <details open={!!draft.layout.rail||undefined}><summary>Cover and storyboard</summary>
      <button className="button" disabled={!!busy||!editable} onClick={async()=>{setBusy('concepts');try{setConcepts(await call('video-design/concepts',{client_id:record.client_id,asset_id:record.id}));}catch(e:any){setErr(e.message)}finally{setBusy('')}}}>{busy==='concepts'?'Planning…':'Generate 3 concepts'}</button>
      {availablePlan?.concepts.map((c:any,i:number)=><button className="button" key={i} disabled={!editable} title={c.scenes.join(' → ')} onClick={()=>{const next=applyRail(draft,availablePlan,i,{seconds:totalSeconds(draft),brand:draft.layout.rail?.brand||'',file_id:draft.layout.rail?.file_id});addOps(['layout','theme','beats'].map(k=>({op:'replace',path:'/'+k,value:next[k]})));setBeat(0);setConcepts(null)}}>{c.name}</button>)}
      {draft.layout.rail&&<><label className="field">Cover caption<input disabled={!editable} value={draft.layout.rail.caption} maxLength={120} onChange={e=>set('/layout/rail/caption',e.target.value||' ')}/></label>{draft.layout.rail.captions?.map((s:string)=><button disabled={!editable} type="button" className="button" key={s} onClick={()=>set('/layout/rail/caption',s)}>{s}</button>)}
-     <label className="field">Product image across all scenes<select disabled={!editable} value={draft.layout.rail.file_id||''} onChange={e=>set('/layout/rail/file_id',e.target.value||null)}><option value="">Generated artwork</option>{media.filter((x:any)=>/^image\/(png|jpeg|webp)$/.test(x.mime)).map((x:any)=><option key={x.id} value={x.id}>{x.name}</option>)}</select></label>
-     <ProductImageInput disabled={!editable||!!busy} onUpload={async file=>{const form=new FormData();form.set('client_id',record.client_id);form.set('file',file);const r=await fetch('/api/upload',{method:'POST',body:form});const x=await r.json();if(!r.ok)throw Error(x.error);setSrv((v:any)=>({...v,media:[x,...v.media]}));set('/layout/rail/file_id',x.id)}}/>
-     {draft.layout.rail.style&&<details><summary>Product layout and motion</summary>{([['laneWidth','Product column %',35,62,1],['visualScale','Product scale',0.5,1.4,.05],['rotation','Rotation',-30,30,1],['periodSeconds','Seconds per pass',2,8,.25]] as const).map(([k,label,min,max,step])=><label className="field" key={k}>{label}<input disabled={!editable} type="range" min={min} max={max} step={step} value={draft.layout.rail.style[k]} onChange={e=>set('/layout/rail/style/'+k,Number(e.target.value))}/></label>)}<a download="style.json" href={'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(draft.layout.rail.style,null,2))}>Export style JSON</a></details>}
      <a className="button" download="reel-project.json" href={'data:application/json;charset=utf-8,'+encodeURIComponent(JSON.stringify(draft,null,2))}>Export project JSON</a>
      {record.data.files?.filter((f:any)=>f.name==='cover.png').map((f:any)=><a className="button" key={f.id} href={'/api/files/'+f.id+'?download'}>Download rendered cover</a>)}</>}
     </details>

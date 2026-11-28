@@ -87,7 +87,7 @@ export function validateDesign(d,{fontIds=null}={}){
  const L=d.layout||{};
  if(L.rail){const r=L.rail;
   if(typeof r.caption!=='string'||!r.caption.trim()||r.caption.length>120||r.caption.trim().split(/\s+/).length>6)e.push('Choose a cover caption of one to six words.');
-  for(const [key,min,max] of [['laneWidth',35,62],['periodSeconds',2,8],['visualScale',0.5,1.4],['rotation',-30,30]])rng(r.style?.[key],min,max,'Product '+key);
+  for(const [key,min,max] of [['laneWidth',35,62],['periodSeconds',2,8],['visualScale',0.5,1.4],['rotation',-30,30],['offsetX',-40,40],['offsetY',-40,40],['crop',0,1]])rng(r.style?.[key],min,max,'Product '+key);
   if(r.captions!==undefined&&(!Array.isArray(r.captions)||r.captions.length>3||r.captions.some(s=>typeof s!=='string'||s.length>120)))e.push('Invalid cover alternatives.');
   if(typeof r.brand!=='string'||r.brand.length>300)e.push('Invalid cover brand.');
   if(r.file_id&&!/^[0-9a-f-]{36}$/i.test(r.file_id))e.push('Choose an image from the asset library.');

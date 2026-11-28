@@ -45,7 +45,7 @@ export function designToHtml(design,o={}){
  const justify={top:'flex-start',center:'center',bottom:'flex-end'}[L.text_position]||'center';
  const rail=L.rail;
  const lane=num(rail?.style?.laneWidth,54), speed=100/num(rail?.style?.periodSeconds,4);
- const visual=rail?.file_id?`<img src="${esc(fileUrl(rail.file_id))}" alt=""/>`:rail?`<svg viewBox="0 0 200 200">${rail.art.map(p=>`<path d="${esc(p.d)}" fill="${hex(p.fill,ink)}"/>`).join('')}</svg>`:'';
+ const visual=rail?.file_id?`<img src="${esc(fileUrl(rail.file_id))}" alt=""/>`:rail?`<svg viewBox="0 0 200 200" preserveAspectRatio="${rail.style?.crop===1?'xMidYMid slice':'xMidYMid meet'}">${rail.art.map(p=>`<path d="${esc(p.d)}" fill="${hex(p.fill,ink)}"/>`).join('')}</svg>`:'';
  const sections=idx.map(i=>{const b=d.beats[i];const s=at(i),dur=Number(b.duration);const al=b.style?.align||ty.align||'left';
   const text=spansText(b.text);const size=fitSize(text,{size:num(ty.size,112),width:W,height:H,safe,line_height:num(ty.line_height,1.04)});
   const words=b.text.map((w,wi)=>{const st=w.style||{};const css=[st.italic?'font-style:italic':'',st.bold?'font-weight:800':'',st.underline?'text-decoration:underline;text-decoration-thickness:.06em':'',st.color?`color:${hex(st.color,ink)}`:''].filter(Boolean).join(';');return `<span class="w" data-i="${wi}"${css?` style="${css}"`:''}>${esc(w.text)}</span>`;}).join(' ');
@@ -97,7 +97,7 @@ html,body{margin:0;background:#000;overflow:hidden}
 .cap-bar{background:rgba(0,0,0,.62);color:#fff;padding:18px 28px;border-radius:14px}
 ${rail?`
 #root{background:linear-gradient(93deg,transparent 30%,#00000009 31%,#ffffff55 31.4%,transparent 39%),linear-gradient(174deg,transparent 67%,#0000000c 68%,transparent 69%),${paper}}
-.product-lane{position:absolute;inset:0 ${100-lane}% 0 0;overflow:hidden}.product-strip{position:absolute;top:-32%;width:100%;height:32%}.product{height:100%;padding:5%;box-sizing:border-box;filter:drop-shadow(0 14px 11px #0002)}.product img,.product svg{width:100%;height:100%;object-fit:contain;transform:rotate(${num(rail.style?.rotation,0)}deg) scale(${num(rail.style?.visualScale,1)})}
+.product-lane{position:absolute;inset:0 ${100-lane}% 0 0;overflow:hidden}.product-strip{position:absolute;top:-32%;width:100%;height:32%}.product{height:100%;padding:5%;box-sizing:border-box;filter:drop-shadow(0 14px 11px #0002)}.product img,.product svg{width:100%;height:100%;object-fit:${rail.style?.crop===1?'cover':'contain'};transform:translate(${num(rail.style?.offsetX,0)}%,${num(rail.style?.offsetY,0)}%) rotate(${num(rail.style?.rotation,0)}deg) scale(${num(rail.style?.visualScale,1)})}
 .paper-fold{position:absolute;left:-3%;bottom:-3%;width:${lane+5}%;height:26%;background:linear-gradient(94deg,#0002,transparent 12%),${paper};border-top:5px solid #ffffff80;transform:skewY(6deg);box-shadow:0 -8px 18px #0001}
 .block{left:${lane}%;right:4%;padding:0;top:16%;bottom:21%;align-items:flex-start;justify-content:center!important}.head{font-family:${body};font-weight:900;font-size:${Math.min(84,ty.size||96)}px!important;line-height:1.02;letter-spacing:-.045em}.w{display:inline}.rail-brand{position:absolute;right:6%;top:14%;font:700 44px ${body}}.chrome .logo{top:14%;bottom:auto;left:auto;right:6%}
 `:''}</style>

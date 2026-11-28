@@ -7,6 +7,7 @@ Shared by scripts/setup-python.sh (folder .local/nltk_data) and the Dockerfile (
 Exits 1 if any REQUIRED package could not be downloaded, so a broken download fails the build instead of the scorers
 silently skipping dimensions later.
 """
+import os
 import sys
 
 import nltk
@@ -21,7 +22,9 @@ def main():
     if len(sys.argv) != 2:
         print(__doc__)
         return 2
-    dest = sys.argv[1]
+    dest = os.path.abspath(sys.argv[1])
+    os.makedirs(dest, exist_ok=True)
+    nltk.data.path[:] = [dest]
     failed = [p for p in REQUIRED if not nltk.download(p, download_dir=dest, quiet=True)]
     for p in OPTIONAL:
         nltk.download(p, download_dir=dest, quiet=True)

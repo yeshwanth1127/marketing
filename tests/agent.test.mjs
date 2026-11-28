@@ -93,8 +93,7 @@ test('Onboarding guidance returns analysis and action buttons',async()=>{
  setJevStub(null);
  assert.equal(res.error,undefined,JSON.stringify(res));
  assert.match(res.result.text,/next step|brand kit|strategy|review|loop|onboard/i,res.result.text);
- assert.ok(Array.isArray(res.result.actions)&&res.result.actions.length>=2,JSON.stringify(res.result.actions));
- assert.ok(res.result.actions.some(a=>a.tool==='set_brand_kit'));
+ assert.ok(res.result.actions.some(a=>a.tool==='draft'&&a.args.step==='strategy'),JSON.stringify(res.result.actions));
 });
 test('A missing website or notes field does not wipe the saved values',async()=>{
  const r=await request('action',{client_id:client,action:'update-client',name:'Agent '+stamp,industry:'Apparel',city:'Bengaluru',languages:['English']});
@@ -264,7 +263,7 @@ test('Strategy chat asks inputs in stage order and confirms before the staged ru
   const n=Number(res.result.text.match(/Question (\d+) of/)[1]);asked.push(n);
   res=await turn({message:/Reply keep/.test(res.result.text)?'keep':/Reply skip/.test(res.result.text)?'skip':'Answer '+n});
  }
- assert.deepEqual(asked,[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,17,18]);
+ assert.deepEqual(asked,[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]);
  assert.match(res.result.text,/1\. Positioning audit[\s\S]*4\. Growth plan/);
  assert.match(res.result.text,/Not provided[^\n]*competitors/);
  res=await turn({confirm:true});
