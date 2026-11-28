@@ -206,8 +206,8 @@ window.__timelines["main"]=tl;
  if(stamp.status!==0)throw new Error('motion-doctrine seam-stamp failed: '+String(stamp.stderr||stamp.stdout).slice(0,400));
 
  const hf=path.join(ROOT,'node_modules/hyperframes/bin/hyperframes.mjs');
- const env={...process.env,HYPERFRAMES_NO_TELEMETRY:'1',DO_NOT_TRACK:'1',HYPERFRAMES_CONFIG_DIR:path.join(ROOT,'.local/hyperframes')};
- const lint=spawnSync(process.execPath,[hf,'lint',keepDir],{cwd:keepDir,encoding:'utf8',env,timeout:120000});
+ const env={...process.env,CI:'1',HYPERFRAMES_NO_UPDATE_CHECK:'1',HYPERFRAMES_NO_TELEMETRY:'1',DO_NOT_TRACK:'1',HYPERFRAMES_CONFIG_DIR:path.join(ROOT,'.local/hyperframes')};
+ const lint=spawnSync(process.execPath,[hf,'lint',path.resolve(keepDir)],{cwd:ROOT,encoding:'utf8',env,timeout:120000});
  const lintOut=String(lint.stdout||lint.stderr||'');
  const lint_ok=lint.status===0||!/✗/.test(lintOut);
  const design={seconds,notes:'Composed by workspace video skills (design system, motion doctrine, HyperFrames, captions overlay).',skills_used:VIDEO_SKILLS.filter(s=>['exora-design-system','motion-doctrine','hyperframes','hyperframes-cli','captions-overlay'].includes(s)),lint_ok,issues_remaining:lint_ok?[]:[lintOut.slice(0,400)]};
